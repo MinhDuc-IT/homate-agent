@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+node_modules/
+dist/
+.env
+*.tsbuildinfo
+playwright-report/
+test-results/
+.local-postgres/
+.local-postgres.log
+.work/
