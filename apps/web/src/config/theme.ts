@@ -1,0 +1,26 @@
+export const theme = {
+  colors: {
+    homemind: '#1FD5F9',
+    homemindDark: '#12B8D9',
+    homemindLight: '#0A2A33',
+    homemindFg: '#070A0F',
+    surface: '#070A0F',
+    border: '#1E293B',
+    borderLight: '#243044',
+    textPrimary: '#E8EEF7',
+    textSecondary: '#94A3B8',
+    textMuted: '#64748B',
+    success: '#34D399',
+    successLight: '#052E1F',
+    warning: '#FBBF24',
+    warningLight: '#2A1F05',
+    info: '#38BDF8',
+    infoLight: '#0C2430',
+    danger: '#F87171',
+    dangerLight: '#2A1215',
+  },
+  layout: {
+    topbarHeight: 52,
+    sidebarWidth: 220,
+  },
+} as const

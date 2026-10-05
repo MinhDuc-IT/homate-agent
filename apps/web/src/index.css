@@ -1,0 +1,145 @@
+@import 'tailwindcss';
+
+@theme {
+  /* HomeMate Nature-inspired Organic Green Palette */
+  --color-primary: #1e4d38;
+  --color-primary-dark: #153828;
+  --color-primary-light: #2d6a4f;
+  --color-primary-subtle: #e4efe6;
+  --color-primary-hover: #265940;
+
+  --color-homemind: #1fd5f9;
+  --color-homemind-dark: #12b8d9;
+  --color-homemind-light: #0a2a33;
+  --color-homemind-subtle: #0c2430;
+  --color-homemind-fg: #070a0f;
+
+  /* App surfaces */
+  --color-bg-app: #f4f6f3;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f8faf7;
+  --color-surface-hover: #edf2eb;
+  --color-elevated: #ffffff;
+
+  --color-border: #e3e8e1;
+  --color-border-light: #edf2eb;
+
+  --color-text-primary: #1c2721;
+  --color-text-secondary: #5a6860;
+  --color-text-muted: #88968e;
+
+  --color-sidebar: #fbfdfa;
+  --color-sidebar-border: #e8ede6;
+  --color-sidebar-muted: #6b7c72;
+  --color-sidebar-hover: #edf3eb;
+  --color-sidebar-active: #e2efe5;
+
+  --color-success: #2e7d32;
+  --color-success-light: #e8f5e9;
+  --color-warning: #e67e22;
+  --color-warning-light: #fef5e7;
+  --color-info: #2980b9;
+  --color-info-light: #ebf5fb;
+  --color-danger: #e74c3c;
+  --color-danger-light: #fdedec;
+
+  --shadow-card: 0 2px 10px -2px rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+  --shadow-elevated: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 4px 10px -3px rgba(0, 0, 0, 0.04);
+  --shadow-header: 0 1px 0 0 rgba(0, 0, 0, 0.05);
+
+  --radius-card: 1.25rem;
+  --radius-control: 0.75rem;
+
+  --font-sans: var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-plus-jakarta), var(--font-inter), 'Segoe UI', system-ui, sans-serif;
+
+  --font-weight-normal: 450;
+  --font-weight-medium: 550;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 750;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+:root {
+  --font-inter: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-plus-jakarta: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--font-weight-normal);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glass effect */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Pulse badge animation */
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+.animate-pulse-live {
+  animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

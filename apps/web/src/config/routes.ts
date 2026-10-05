@@ -1,0 +1,18 @@
+export const ROUTES = {
+  login: '/login',
+  dashboard: '/dashboard',
+  room: '/room',
+  energy: '/energy',
+  devices: '/devices',
+  camera: '/camera',
+  scenes: '/scenes',
+  schedules: '/schedules',
+  settings: '/settings',
+  voice: '/voice',
+  voiceAgent: '/voice-agent',
+  clarify: '/clarify',
+  hitl: '/hitl',
+  scenarios: '/scenarios',
+  mock: '/mock',
+  uiKit: '/ui-kit',
+} as const
