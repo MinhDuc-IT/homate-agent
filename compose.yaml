@@ -1,0 +1,32 @@
+name: homate
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-homate}
+      POSTGRES_USER: ${POSTGRES_USER:-homate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-homate_local}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-55433}:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./apps/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-homate}:${POSTGRES_PASSWORD:-homate_local}@db:5432/${POSTGRES_DB:-homate}
+      APP_ENV: ${APP_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET:-homate-development-change-this-secret-before-production}
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    build: ./apps/web
+    ports: ["127.0.0.1:5173:80"]
+    depends_on: [backend]
+volumes:
+  postgres_data:
