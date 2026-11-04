@@ -1,95 +1,123 @@
 # HomeMate
 
-Làm lại phần software của P-072 với giao diện gốc React, FastAPI và PostgreSQL. AI sẽ được tích hợp sau; phần software hoạt động độc lập.
+HomeMate là ứng dụng quản lý nhà thông minh với giao diện web, backend nghiệp vụ và trợ lý AI dạng text. Người dùng có thể theo dõi thiết bị, quản lý kịch bản/lịch tự động, xem điện năng và gửi yêu cầu bằng ngôn ngữ tự nhiên.
 
-## Chức năng
+## Tính năng
 
-- Đăng nhập PIN, refresh cookie và phân quyền admin/thành viên.
-- Dashboard, phòng, thiết bị, điều khiển thủ công và WebSocket có xác thực.
-- Quản lý thành viên; kịch bản và các bước điều khiển, thực thi và kiểm tra xung đột.
-- Lịch một lần/lặp lại, bật/tắt lịch, worker thực thi và lịch sử chạy.
-- Báo cáo điện năng, lấy mẫu/tổng hợp dữ liệu; cài đặt, nhật ký, chính sách xác nhận và giả lập phòng.
-- Gợi ý phòng trống bằng quy tắc; thao tác nhạy cảm xác nhận thủ công.
+- Đăng nhập PIN, access token/refresh cookie và phân quyền quản trị viên/thành viên.
+- Dashboard, phòng, thiết bị và điều khiển thủ công; cập nhật trạng thái qua WebSocket.
+- Quản lý thành viên, kịch bản, lịch một lần/lặp lại và lịch sử thực thi.
+- Báo cáo điện năng theo kỳ, phòng, thiết bị và ngày tham chiếu.
+- Cài đặt, nhật ký thao tác, chính sách xác nhận và giả lập trạng thái phòng.
+- Trợ lý text với 17 tools: tra cứu, điều khiển thiết bị, quản lý kịch bản và lịch. Thao tác thay đổi dữ liệu cần người dùng xác nhận.
 
-Giữ bố cục và tài nguyên giao diện của P-072. Camera dùng dữ liệu minh họa; Unity WebGL và kết nối phần cứng chưa triển khai. Điện năng được ước tính theo trạng thái/công suất thiết bị mô phỏng. Không chạy LLM/STT/TTS; trang AI hiển thị chờ tích hợp.
+Thiết bị hiện hoạt động ở chế độ mô phỏng; điện năng được ước tính từ trạng thái/công suất. Camera dùng dữ liệu minh họa. Kết nối phần cứng, STT/TTS và RAG chưa triển khai; viewport 3D cần bản Unity WebGL phù hợp.
 
-Seed giống P-072: Michelin Bois, 6 phòng, 22 thiết bị, 4 thành viên. Đăng nhập **Minh Đức / PIN 1234**. Chưa nhập dữ liệu SQLite cá nhân từ project cũ; P-072 không bị sửa.
+## Bắt đầu nhanh
 
-## Docker
+Cần Docker Desktop đang chạy với Linux containers. Từ thư mục project:
 
 ```powershell
-cd homate-agent
-Copy-Item .env.example .env
+# Chỉ tạo .env nếu chưa có; giữ cấu hình/key bạn đã điền.
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up --build -d
 ```
 
-Giao diện http://localhost:5173; Swagger http://localhost:8000/docs. Backend tự chạy migration. Volume postgres_data giữ dữ liệu qua docker compose down. Đổi PIN mẫu và JWT_SECRET trước khi triển khai.
+Để dùng OpenRouter, đặt trong `.env`:
 
-## Local
-
-Python 3.11+, Node.js 22.22+, PostgreSQL 17+. Từ homate-agent, tạo database/user riêng và đặt DATABASE_URL tương ứng:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e "./apps/backend[test]"
-$env:DATABASE_URL = "postgresql+psycopg://homate:homate_local@127.0.0.1:55433/homate"
-cd apps/backend
-..\..\.venv\Scripts\python.exe -m alembic upgrade head
-..\..\.venv\Scripts\python.exe -m uvicorn homate.bootstrap:create_app --factory --reload --host 127.0.0.1 --port 8000
+```dotenv
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=your-private-key
+OPENROUTER_MODEL_NAME=openai/gpt-4o-mini
 ```
 
-Terminal khác:
+Đăng nhập mẫu: **Minh Đức / PIN 1234**. Dữ liệu phát triển gồm nhà Michelin Bois, 6 phòng, 22 thiết bị và 4 thành viên.
 
-```powershell
-cd homate-agent/apps/web
-npm.cmd ci
-npm.cmd run dev
+| Thành phần | Địa chỉ |
+|---|---|
+| Giao diện | http://localhost:5173 |
+| Trợ lý | http://localhost:5173/assistant |
+| Backend Swagger | http://localhost:8000/docs |
+| AI Swagger | http://localhost:8010/docs |
+| PostgreSQL trên máy host | localhost:55433 |
+
+Backend tự chạy Alembic trước khi khởi động. Volume `postgres_data` giữ dữ liệu khi chạy `docker compose down`. Sau khi đổi provider/key trong `.env`, áp dụng bằng `docker compose up -d --force-recreate ai-service`.
+
+## Kiến trúc
+
+```mermaid
+flowchart LR
+    Web[React frontend] --> Backend[FastAPI backend]
+    Web --> AI[AI service]
+    AI --> Provider[LLM provider]
+    AI -->|Tools với token người dùng| Backend
+    Backend --> DB[(PostgreSQL)]
+    Backend -->|WebSocket| Web
 ```
 
-Vite proxy /api và /ws về backend; Docker dùng Nginx. Backend đọc .env gốc project và biến môi trường; Alembic dùng DATABASE_URL trong môi trường. Cấu hình mẫu ở .env.example.
-
-## Clean Architecture
+Backend sở hữu dữ liệu, phân quyền, validation và thực thi. AI service diễn giải yêu cầu và đề xuất thao tác qua HTTP, không truy cập trực tiếp database. Xác nhận từ giao diện gọi backend trực tiếp.
 
 ```text
-apps/backend/src/homate/
-  bootstrap.py, software_bootstrap.py  # Composition root
-  application/household.py             # Use cases + repository port
-  modules/
-    home/domain/, home/application/   # Thiết bị, trạng thái phòng
-    identity/domain/                  # PIN
-    automation/domain/, application/  # Quy tắc lịch và service
-    energy/application/               # Port báo cáo điện năng
-    catalog/                          # Scaffold cũ, không mount vào app hiện tại
-  presentation/                       # HTTP/auth/WebSocket routes
-  infrastructure/
-    postgres/                         # Persistence adapters
-    tokens.py, realtime.py, weather.py
-  worker.py                           # Scheduler, energy, occupancy
-apps/backend/migrations/              # Alembic
-apps/web/src/
-  screens/, components/               # Giao diện gốc P-072
-  context/, hooks/, services/          # State và HTTP adapters
-  config/features.ts                  # AI mặc định tắt
+apps/
+  backend/
+    src/homate/
+      application/          # Use cases và repository ports
+      modules/              # Home, identity, automation, energy
+      presentation/         # HTTP/auth/WebSocket
+      infrastructure/       # PostgreSQL, tokens, weather, realtime
+      software_bootstrap.py # Composition root
+      worker.py             # Lịch, lấy mẫu điện năng, quy tắc phòng trống
+    migrations/
+    tests/
+  ai-service/
+    src/homate_ai/
+      domain/
+      application/          # Orchestrator, tools, ports
+      infrastructure/       # LLM và backend HTTP adapters
+      presentation/
+      bootstrap.py
+    tests/
+  web/
+    src/
+      screens/, components/
+      api/, context/, hooks/, types/, config/
+    tests/
+docs/
+compose.yaml
 ```
 
-Domain/application không phụ thuộc FastAPI/PostgreSQL. Presentation gọi use cases; infrastructure hiện thực port; composition root nối các thành phần. Frontend giữ cấu trúc màn hình gốc để bảo toàn giao diện, chưa tách toàn bộ thành feature modules.
+Domain/application độc lập HTTP và database adapters. Infrastructure hiện thực các port; composition root nối các thành phần. Frontend tổ chức theo màn hình, component, state và HTTP adapters.
 
-PostgreSQL namespace homate dùng JSONB, TIMESTAMPTZ, khóa ngoại và transaction. Migration 0001 giữ scaffold ban đầu; 0002 tạo phần software. Seed có khóa chống khởi tạo đồng thời. Scheduler hiện dành cho một backend process; lịch sử có unique key tránh chạy lặp cùng mốc.
+## Tài liệu
+
+- [Cài đặt, cấu hình, chạy local và Docker](docs/getting-started.md)
+- [Kiến trúc AI, tools, memory và xác nhận](docs/ai-architecture.md)
 
 ## Kiểm thử
 
+Cài dependencies Python theo hướng dẫn local, sau đó:
+
 ```powershell
-cd homate-agent/apps/backend
+# Backend: PostgreSQL thật, user test cần quyền CREATEDB.
+cd apps/backend
 $env:TEST_DATABASE_URL = "postgresql+psycopg://homate:homate_local@127.0.0.1:55433/homate"
 ..\..\.venv\Scripts\python.exe -m pytest -q
-```
 
-Test software tạo database ngẫu nhiên rồi chỉ xóa database đó; user test cần CREATEDB. Test catalog dùng schema riêng. Thiếu TEST_DATABASE_URL thì integration test skip.
+# AI: model/provider giả lập, không gọi LLM thật.
+cd ../ai-service
+..\..\.venv\Scripts\python.exe -m pytest -q
 
-```powershell
-cd homate-agent/apps/web
+# Frontend: backend local phải chạy ở cổng 8000; cần Microsoft Edge.
+cd ../web
+npm.cmd ci
 npm.cmd run build
 npx.cmd playwright test
 ```
 
-Playwright cần backend cổng 8000 và Microsoft Edge; kiểm tra đăng nhập, các màn hình và điều khiển thiết bị qua reload. API chính: /api/auth, /api/dashboard; WebSocket: /ws/devices. Chi tiết request/response xem Swagger.
+Không có `TEST_DATABASE_URL`, integration tests backend được skip. Các test tạo database/schema riêng và dọn dữ liệu test khi kết thúc. Playwright giả lập phản hồi chat nhưng gọi backend thật để kiểm tra proposal và thực thi.
+
+## Phạm vi hiện tại
+
+Agent dùng ngữ cảnh tối đa 12 tin nhắn gần nhất do frontend gửi; lịch sử mất khi reload/rời trang chat. Chưa có memory bền vững hoặc planner bảo đảm chuỗi thao tác tự do. Các trường hợp mơ hồ/thiếu thông tin dựa vào LLM hỏi lại, cần đánh giá bằng bộ câu thực tế.
+
+Backend hiện dành cho một process. Receipt chống thực thi lặp nhưng không tạo transaction nguyên tử cho mọi side effect; kịch bản có thể chạy một phần khi persistence lỗi. Chi tiết phục hồi và trạng thái xác nhận xem tài liệu AI.
