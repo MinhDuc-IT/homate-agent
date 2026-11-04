@@ -6,6 +6,7 @@ import { Providers } from '@/components/providers/Providers'
 import { ROUTES } from '@/config/routes'
 import { AI_ENABLED } from '@/config/features'
 import { AiPending } from '@/screens/AiPending'
+import { AssistantScreen } from '@/screens/AssistantScreen'
 import { CameraScreen } from '@/screens/CameraScreen'
 import { ClarifyDialog } from '@/screens/ClarifyDialog'
 import { Dashboard } from '@/screens/Dashboard'
@@ -35,6 +36,7 @@ export default function App() {
 
             <Route element={<AppLayout />}>
               <Route path={ROUTES.dashboard} element={<Dashboard />} />
+              <Route path={ROUTES.assistant} element={<AssistantScreen />} />
               <Route path={ROUTES.room} element={<RoomScreen />} />
               <Route path={ROUTES.energy} element={<EnergyScreen />} />
               <Route path={ROUTES.devices} element={<DeviceScreen />} />

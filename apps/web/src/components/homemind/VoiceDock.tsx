@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CloseIcon } from '@/assets/icons/CommonIcons'
 import { AgentAudioVisualizerAura } from '@/components/agents-ui/agent-audio-visualizer-aura'
 import { AgentTracePanel } from '@/components/homemind/AgentTracePanel'
@@ -27,7 +28,8 @@ function SoftwareDock({ variant, className }: VoiceDockProps) {
   const suggestion = ambientSuggestions[0]
   return <div className={cn('flex min-w-0 items-center gap-3 rounded-xl px-3 py-2', variant === 'footer' && 'border-t border-sidebar-border bg-elevated', className)}>
     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-subtle text-primary" aria-hidden="true">✦</div>
-    <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-primary">{suggestion ? 'Gợi ý tiết kiệm điện' : 'Trợ lý HomeMate'}</p><p className="mt-0.5 text-[11px] text-text-secondary">{suggestion?.message ?? 'AI sẽ được tích hợp ở giai đoạn tiếp theo.'}</p></div>
+    <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-primary">{suggestion ? 'Gợi ý tiết kiệm điện' : 'Trợ lý HomeMate'}</p><p className="mt-0.5 text-[11px] text-text-secondary">{suggestion?.message ?? 'Nhắn tin với trợ lý để quản lý ngôi nhà.'}</p></div>
+    {!suggestion && <Link to="/assistant" className="rounded-lg bg-primary px-3 py-2 text-xs text-white">Mở trợ lý</Link>}
     {suggestion && <div className="flex shrink-0 gap-2"><Button size="xs" onClick={() => void respondAmbientSuggestion(suggestion.request_id, true)}>Tắt thiết bị</Button><Button size="xs" variant="ghost" onClick={() => void respondAmbientSuggestion(suggestion.request_id, false)}>Bỏ qua</Button></div>}
   </div>
 }

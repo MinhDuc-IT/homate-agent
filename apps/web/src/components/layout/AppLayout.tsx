@@ -26,6 +26,7 @@ export function AppLayout() {
 
   const navItems = [
     { to: ROUTES.dashboard, label: 'Trang chủ', icon: NavHomeIcon },
+    { to: ROUTES.assistant, label: 'Trợ lý', icon: NavSceneIcon },
     { to: ROUTES.room, label: 'Phòng', icon: NavRoomIcon },
     { to: ROUTES.energy, label: 'Điện năng', icon: NavEnergyIcon },
     { to: ROUTES.devices, label: 'Thiết bị', icon: NavDeviceIcon },
@@ -36,10 +37,11 @@ export function AppLayout() {
   ]
 
   const isRoomScreen = location.pathname.startsWith(ROUTES.room)
+  const isAssistantScreen = location.pathname === ROUTES.assistant
 
   return (
     <div className="flex min-h-screen w-full justify-center bg-[#E2E8E0] font-sans text-[#1C2721] antialiased">
-      <div className="flex h-screen w-full max-w-[1180px] overflow-hidden bg-[#F4F6F3] shadow-[0_0_60px_rgba(0,0,0,0.06)]">
+      <div className="flex h-dvh w-full max-w-[1180px] overflow-hidden bg-[#F4F6F3] shadow-[0_0_60px_rgba(0,0,0,0.06)]">
       {/* Mobile Drawer Backdrop */}
       {mobileMenuOpen && (
         <div
@@ -175,7 +177,7 @@ export function AppLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top Header */}
         <header className="relative z-20 flex shrink-0 items-center gap-2 border-b border-[#E8EDE6]/60 bg-[#F4F6F3] px-3 py-2 md:gap-3 md:px-4">
           <button
@@ -214,7 +216,7 @@ export function AppLayout() {
             </button>
           ) : null}
 
-          <VoiceDock variant="header" />
+          {isAssistantScreen ? <div className="min-w-0 flex-1 px-1"><p className="text-xs font-medium text-[#5A6860]">HomeMate <span className="mx-1.5 text-[#B7C2B8]">/</span> Trợ lý</p></div> : <VoiceDock variant="header" />}
 
           <div className="flex shrink-0 items-center gap-2">
             {/* Notification Bell with Badge */}

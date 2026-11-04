@@ -1,5 +1,6 @@
 export const ROUTES = {
   login: '/login',
+  assistant: '/assistant',
   dashboard: '/dashboard',
   room: '/room',
   energy: '/energy',
