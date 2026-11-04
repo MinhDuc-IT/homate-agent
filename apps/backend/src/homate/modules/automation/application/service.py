@@ -53,6 +53,7 @@ class ScheduleService:
         return data
 
     def list(self, home_id, **filters): return self.repository.list(home_id, **filters)
+    def validate(self, home_id, data): return self._validate(home_id, dict(data))
     def get(self, home_id, identifier): return self.repository.get(home_id, identifier)
     def create(self, home_id, user_id, data): return self.repository.create(home_id, user_id, self._validate(home_id, dict(data)))
     def update(self, home_id, identifier, data):

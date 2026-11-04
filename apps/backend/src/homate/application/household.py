@@ -61,6 +61,8 @@ class HouseholdService:
     def create_scene(self, home_id, **data):
         self._validate_steps(home_id, data.get("steps") or [])
         return self.repository.create_scene(home_id, **data)
+    def validate_scene_steps(self, home_id, steps):
+        self._validate_steps(home_id, steps)
     def update_scene(self, home_id, scene_id, **data):
         self._validate_steps(home_id, data.get("steps") or [])
         return self.repository.update_scene(home_id, scene_id, **data)

@@ -183,3 +183,150 @@ def test_energy_reports_and_postgres_aggregation(client, admin, period):
 def test_ai_is_explicitly_deferred(client, admin):
     response = client.post("/api/dashboard/chat", headers=admin, json={"message": "Bật đèn"})
     assert response.status_code == 503 and "giai đoạn tiếp theo" in response.json()["detail"]
+
+
+def propose(client, headers, tool='control_device', arguments=None, request_id=None):
+    return client.post('/api/dashboard/agent/tools', headers=headers, json={
+        'request_id':request_id or str(uuid4()), 'tool':tool,
+        'arguments':arguments if arguments is not None else {'device_id':'light-living','action':'turn_off','parameters':{}}})
+
+
+def test_agent_proposal_is_durable_and_executes_only_once(client, admin):
+    store = client.app.state.device_store
+    original = store.get('light-living').state['power']
+    identifier = str(uuid4())
+    args = {'device_id':'light-living','action':'turn_off' if original else 'turn_on','parameters':{}}
+    response = propose(client, admin, arguments=args, request_id=identifier)
+    assert response.status_code == 200, response.text
+    pending = response.json()
+    assert pending['status'] == 'pending' and store.get('light-living').state['power'] == original
+    assert propose(client, admin, arguments=args, request_id=identifier).json()['id'] == pending['id']
+    path = f"/api/dashboard/agent/actions/{pending['id']}/decision"
+    assert client.post(path,headers=admin,json={'approved':True}).json()['status'] == 'executed'
+    assert store.get('light-living').state['power'] is not original
+    store.apply_action('light-living','power',original)
+    assert client.post(path,headers=admin,json={'approved':True}).json()['status'] == 'executed'
+    assert store.get('light-living').state['power'] == original
+
+
+def test_agent_confirmation_is_user_bound_rejectable_and_expiring(client, admin):
+    pending = propose(client,admin).json()
+    member_login = client.post('/api/dashboard/auth/login',json={'user_id':'vinh','pin':'1234'}).json()
+    member = {'Authorization':'Bearer '+member_login['access_token']}
+    path = f"/api/dashboard/agent/actions/{pending['id']}/decision"
+    assert client.post(path,headers=member,json={'approved':True}).status_code == 404
+    assert client.post(path,headers=admin,json={'approved':False}).json()['status'] == 'rejected'
+    assert client.post(path,headers=admin,json={'approved':True}).json()['status'] == 'rejected'
+    pending = propose(client,admin).json()
+    with connect(client.app.state.database_url) as conn:
+        conn.execute("UPDATE agent_actions SET expires_at=now()-interval '1 second' WHERE id=%s",(pending['id'],))
+    path = f"/api/dashboard/agent/actions/{pending['id']}/decision"
+    assert client.post(path,headers=admin,json={'approved':True}).json()['status'] == 'expired'
+
+
+def test_agent_tool_authorization_and_validation(client, admin):
+    assert propose(client,{}).status_code == 401
+    assert propose(client,admin,arguments={'device_id':'light-living','action':'set_brightness','parameters':{'brightness':999}}).status_code == 400
+    identifier = str(uuid4())
+    assert propose(client,admin,request_id=identifier).status_code == 200
+    assert propose(client,admin,arguments={'device_id':'light-living','action':'turn_on','parameters':{}},request_id=identifier).status_code == 400
+    assert propose(client,admin,'get_home_snapshot',{}).json()['devices']
+    assert propose(client,admin,'get_energy_report',{'period':'today'}).json()['source'] == 'estimated'
+    assert client.get('/api/dashboard/agent/identity',headers=admin).json()['role'] == 'admin'
+    member = client.post('/api/dashboard/auth/login',json={'user_id':'vinh','pin':'1234'}).json()
+    headers = {'Authorization':'Bearer '+member['access_token']}
+    schedule = {'name':'Agent test','schedule_type':'recurring','target_type':'device_action','device_id':'light-living','action':'turn_off','recurrence_rule':{'frequency':'daily','time':'23:00'}}
+    assert propose(client,headers,'create_schedule',schedule).status_code == 403
+    pending = propose(client,admin,'create_schedule',schedule).json()
+    response = client.post(f"/api/dashboard/agent/actions/{pending['id']}/decision",headers=admin,json={'approved':True})
+    assert response.status_code == 200, response.text
+    assert response.json()['status'] == 'executed'
+    client.delete('/api/dashboard/schedules/'+response.json()['result']['id'],headers=admin)
+
+
+def test_agent_scene_executes_and_rejects_changed_scene(client, admin):
+    payload = {'name':'Agent scene','voice_keyword':'agent scene','steps':[{'device_id':'light-living','action':'turn_off','parameters':{}}]}
+    scene = client.post('/api/dashboard/scenes',headers=admin,json=payload).json()
+    pending = propose(client,admin,'execute_scene',{'scene_id':scene['id']}).json()
+    path = f"/api/dashboard/agent/actions/{pending['id']}/decision"
+    assert client.post(path,headers=admin,json={'approved':True}).json()['status'] == 'executed'
+    pending = propose(client,admin,'execute_scene',{'scene_id':scene['id']}).json()
+    payload['name'] = 'Changed scene'
+    assert client.put('/api/dashboard/scenes/'+scene['id'],headers=admin,json=payload).status_code == 200
+    path = f"/api/dashboard/agent/actions/{pending['id']}/decision"
+    assert client.post(path,headers=admin,json={'approved':True}).status_code == 400
+    assert client.post(path,headers=admin,json={'approved':True}).json()['status'] == 'failed'
+    client.delete('/api/dashboard/scenes/'+scene['id'],headers=admin)
+
+
+def agent_confirm(client, headers, tool, arguments):
+    proposal = propose(client,headers,tool,arguments)
+    assert proposal.status_code == 200, proposal.text
+    pending = proposal.json()
+    assert pending['status'] == 'pending'
+    response = client.post(f"/api/dashboard/agent/actions/{pending['id']}/decision",headers=headers,json={'approved':True})
+    assert response.status_code == 200, response.text
+    assert response.json()['status'] == 'executed'
+    return response.json()['result']
+
+
+def test_agent_scene_management(client, admin):
+    data = {'name':'Managed by agent','voice_keyword':'managed by agent','steps':[{'device_id':'light-living','action':'set_brightness','parameters':{'brightness':45}}]}
+    pending = propose(client,admin,'create_scene',data).json()
+    assert all(scene['name'] != data['name'] for scene in propose(client,admin,'list_scenes',{}).json()['scenes'])
+    receipt = client.post(f"/api/dashboard/agent/actions/{pending['id']}/decision",headers=admin,json={'approved':True}).json()
+    scene = receipt['result']
+    assert scene['steps'][0]['parameters']['brightness'] == 45
+    assert propose(client,admin,'get_scene',{'scene_id':scene['id']}).json()['name'] == data['name']
+    updated = agent_confirm(client,admin,'update_scene',{'scene_id':scene['id'],'changes':{'name':'Renamed by agent'}})
+    assert updated['name'] == 'Renamed by agent' and len(updated['steps']) == 1
+    for enabled in (False,True):
+        assert agent_confirm(client,admin,'set_scene_enabled',{'scene_id':scene['id'],'enabled':enabled})['is_enabled'] == enabled
+    assert agent_confirm(client,admin,'delete_scene',{'scene_id':scene['id']})['deleted']
+    assert propose(client,admin,'get_scene',{'scene_id':scene['id']}).status_code == 400
+
+
+def test_agent_schedule_management_and_run_history(client, admin):
+    when = datetime.now(timezone.utc)+timedelta(hours=2)
+    data = {'name':'Managed schedule','schedule_type':'once','target_type':'device_action','device_id':'light-living','action':'turn_off','run_at':when.isoformat()}
+    schedule = agent_confirm(client,admin,'create_schedule',data)
+    assert schedule['id'] in {row['id'] for row in propose(client,admin,'list_schedules',{'room_id':'living','include_finished':True}).json()['schedules']}
+    assert propose(client,admin,'get_schedule',{'schedule_id':schedule['id']}).json()['name'] == data['name']
+    changed = agent_confirm(client,admin,'update_schedule',{'schedule_id':schedule['id'],'changes':{'name':'Updated schedule'}})
+    assert changed['name'] == 'Updated schedule'
+    for enabled in (False,True):
+        assert agent_confirm(client,admin,'set_schedule_enabled',{'schedule_id':schedule['id'],'enabled':enabled})['enabled'] == enabled
+    assert propose(client,admin,'get_schedule_runs',{'schedule_id':schedule['id']}).json()['runs'] == []
+    client.app.state.schedule_service.execute_due(when+timedelta(minutes=1))
+    runs = propose(client,admin,'get_schedule_runs',{'schedule_id':schedule['id']}).json()['runs']
+    assert len(runs) == 1 and runs[0]['status'] == 'success'
+    assert agent_confirm(client,admin,'delete_schedule',{'schedule_id':schedule['id']})['deleted']
+
+
+def test_agent_management_checks_live_roles_and_stale_updates(client, admin):
+    data = {'name':'Stale test','voice_keyword':'stale test','steps':[]}
+    scene = agent_confirm(client,admin,'create_scene',data)
+    pending = propose(client,admin,'update_scene',{'scene_id':scene['id'],'changes':{'name':'Agent new name'}}).json()
+    client.put('/api/dashboard/scenes/'+scene['id'],headers=admin,json={**data,'name':'Changed elsewhere'})
+    response = client.post(f"/api/dashboard/agent/actions/{pending['id']}/decision",headers=admin,json={'approved':True})
+    assert response.status_code == 400 and 'thay đổi' in response.json()['detail']
+    member = client.post('/api/dashboard/auth/login',json={'user_id':'vinh','pin':'1234'}).json()
+    headers = {'Authorization':'Bearer '+member['access_token']}
+    for tool,args in [('create_scene',data),('update_scene',{'scene_id':scene['id'],'changes':{'name':'No permission'}}),('delete_scene',{'scene_id':scene['id']}),('set_scene_enabled',{'scene_id':scene['id'],'enabled':False})]:
+        assert propose(client,headers,tool,args).status_code == 403
+    assert propose(client,headers,'list_scenes',{}).status_code == 200
+    assert propose(client,headers,'list_schedules',{}).status_code == 200
+    assert propose(client,admin,'update_scene',{'scene_id':scene['id'],'changes':{}}).status_code == 400
+    assert propose(client,admin,'update_scene',{'scene_id':scene['id'],'changes':None}).status_code == 400
+    assert propose(client,admin,'update_scene',{'scene_id':scene['id'],'changes':{'steps':None}}).status_code == 400
+    agent_confirm(client,admin,'delete_scene',{'scene_id':scene['id']})
+
+
+def test_agent_detailed_energy_matches_backend(client, admin):
+    filters = {'period':'7days','room_id':'living','device_id':'light-living','anchor':'2026-10-01'}
+    expected = client.get('/api/dashboard/energy',headers=admin,params=filters)
+    actual = propose(client,admin,'get_energy_report',filters)
+    assert actual.status_code == 200, actual.text
+    assert actual.json() == expected.json()
+    for args in ({'anchor':'not-a-date'},{'room_id':'unknown'},{'device_id':'unknown'}, {'room_id':'bed','device_id':'light-living'},{'period':'invalid'},{'unexpected':True}):
+        assert propose(client,admin,'get_energy_report',args).status_code == 400
