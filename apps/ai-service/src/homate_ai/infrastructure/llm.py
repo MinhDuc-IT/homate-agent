@@ -4,7 +4,7 @@ from homate_ai.domain.conversation import AgentUnavailable, ModelReply, ToolCall
 
 
 class CompatibleChatModel:
-    """Chat Completions adapter for the existing P-072 provider/model defaults."""
+    """Chat Completions adapter for the existing provider/model defaults."""
     def __init__(self, client: httpx.AsyncClient, model: str, api_key: str):
         self.client, self.model, self.api_key = client, model, api_key
 
