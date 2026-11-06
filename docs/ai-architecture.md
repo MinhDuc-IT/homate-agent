@@ -1,6 +1,6 @@
 # Kiến trúc trợ lý HomeMate
 
-AI service cung cấp trợ lý dạng text, 17 tools và cơ chế đề xuất thao tác. Backend quản lý dữ liệu, phân quyền, validation và thực thi. STT/TTS, RAG, audio streaming và ngắt lời chưa có implementation.
+AI service cung cấp trợ lý, 17 tools và cơ chế đề xuất thao tác. Backend quản lý dữ liệu, phân quyền, validation và thực thi. STT/TTS local hoạt động qua `SpeechService` và HTTP adapters tới `speech-service` (Sherpa-ONNX + Piper). RAG, audio streaming và ngắt lời tự động chưa triển khai. Xem [luồng giọng nói](voice.md).
 
 ## Thành phần và chiều phụ thuộc
 
@@ -129,5 +129,5 @@ Các bước tiếp theo:
 1. Bộ đánh giá câu tiếng Việt với provider thật: lệnh đơn, mơ hồ, chuỗi, phủ định và lỗi provider.
 2. Planner có kế hoạch cấu trúc và luồng hỏi lại có trạng thái.
 3. Hội thoại bền vững, phục hồi phiên và xử lý receipt executing.
-4. STT/TTS adapters, phiên voice có xác thực, streaming và ngắt lời.
+4. Audio streaming và ngắt lời; STT/TTS hiện dùng Aura trên header, thu âm theo lượt và tự phát phản hồi.
 5. RAG ingestion/retrieval có nguồn và lọc theo home. Trạng thái thiết bị luôn lấy từ backend tools.

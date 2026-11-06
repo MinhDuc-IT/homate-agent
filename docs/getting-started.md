@@ -37,6 +37,8 @@ Chỉ điền key chưa đủ: `LLM_PROVIDER` phải chọn đúng provider. Mod
 
 ## Docker
 
+STT/TTS tiếng Việt chạy local bằng `speech-service`, được khởi động cùng Compose. Khi phát triển local, chạy thêm service ở port 9020 theo [hướng dẫn giọng nói](voice.md).
+
 Cần Docker Desktop với Linux containers. Dừng các server local chiếm cổng 5173, 8000 hoặc 8010 trước khi chạy cùng bộ dịch vụ bằng Docker.
 
 ```powershell
