@@ -11,3 +11,5 @@ test-results/
 .local-postgres/
 .local-postgres.log
 .work/
+
+apps/speech-service/models/

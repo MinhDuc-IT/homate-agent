@@ -1,0 +1,8 @@
+fastapi>=0.121,<1
+uvicorn[standard]>=0.30,<1
+python-multipart>=0.0.18
+sherpa-onnx==1.13.4
+numpy>=1.26,<3
+scipy>=1.13,<2
+soundfile>=0.12,<1
+piper-tts==1.6.0
