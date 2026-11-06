@@ -37,7 +37,6 @@ export function AppLayout() {
   ]
 
   const isRoomScreen = location.pathname.startsWith(ROUTES.room)
-  const isAssistantScreen = location.pathname === ROUTES.assistant
 
   return (
     <div className="flex min-h-screen w-full justify-center bg-[#E2E8E0] font-sans text-[#1C2721] antialiased">
@@ -216,7 +215,7 @@ export function AppLayout() {
             </button>
           ) : null}
 
-          {isAssistantScreen ? <div className="min-w-0 flex-1 px-1"><p className="text-xs font-medium text-[#5A6860]">HomeMate <span className="mx-1.5 text-[#B7C2B8]">/</span> Trợ lý</p></div> : <VoiceDock variant="header" />}
+          <VoiceDock variant="header" />
 
           <div className="flex shrink-0 items-center gap-2">
             {/* Notification Bell with Badge */}

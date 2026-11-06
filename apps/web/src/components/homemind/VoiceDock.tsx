@@ -1,281 +1,112 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { CloseIcon } from '@/assets/icons/CommonIcons'
-import { AgentAudioVisualizerAura } from '@/components/agents-ui/agent-audio-visualizer-aura'
-import { AgentTracePanel } from '@/components/homemind/AgentTracePanel'
-import { Button } from '@/components/ui/Button'
-import { useVoiceAgentController } from '@/hooks/useVoiceAgentController'
-import { cn } from '@/utils/cn'
-import { VOICE_AGENT_STATE_LABEL } from '@/utils/voiceAgentState'
-import { AI_ENABLED } from '@/config/features'
+import { useEffect, useRef, useState } from 'react'
+import { MicrophoneButton } from '@/components/homemind/VoiceMicrophone'
+import { ActionCard } from '@/components/assistant/ActionCard'
+import { actionStatusLabels } from '@/components/assistant/actionStatus'
+import { apiFetch, parseError } from '@/api/http'
+import { sendChat, decideAction, type ChatMessage, type PendingAction } from '@/api/agent'
 import { useDevices } from '@/context/DevicesContext'
+import { cn } from '@/utils/cn'
 
-type VoiceDockVariant = 'footer' | 'header'
-
-interface VoiceDockProps {
-  variant?: VoiceDockVariant
-  className?: string
-}
-
-/** Compact voice control dock for panel shell or header bar. */
-export function VoiceDock({ variant = 'footer', className }: VoiceDockProps) {
-  if (AI_ENABLED) return <ConnectedVoiceDock variant={variant} className={className} />
-  return <SoftwareDock variant={variant} className={className} />
-}
-
-function SoftwareDock({ variant, className }: VoiceDockProps) {
+/** Global push-to-talk voice assistant, using the original header Aura. */
+export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer' | 'header'; className?: string }) {
+  const [busy, setBusy] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
+  const [micActive, setMicActive] = useState(false)
+  const [transcript, setTranscript] = useState('')
+  const [reply, setReply] = useState('')
+  const [error, setError] = useState('')
+  const [actions, setActions] = useState<PendingAction[]>([])
+  const [trace, setTrace] = useState<{ tool: string; status: string }[]>([])
+  const history = useRef<ChatMessage[]>([])
+  const audio = useRef<HTMLAudioElement | null>(null)
+  const audioUrl = useRef('')
+  const generation = useRef(0)
+  const inFlight = useRef(false)
+  const mounted = useRef(false)
   const { ambientSuggestions, respondAmbientSuggestion } = useDevices()
   const suggestion = ambientSuggestions[0]
-  return <div className={cn('flex min-w-0 items-center gap-3 rounded-xl px-3 py-2', variant === 'footer' && 'border-t border-sidebar-border bg-elevated', className)}>
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-subtle text-primary" aria-hidden="true">✦</div>
-    <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-primary">{suggestion ? 'Gợi ý tiết kiệm điện' : 'Trợ lý HomeMate'}</p><p className="mt-0.5 text-[11px] text-text-secondary">{suggestion?.message ?? 'Nhắn tin với trợ lý để quản lý ngôi nhà.'}</p></div>
-    {!suggestion && <Link to="/assistant" className="rounded-lg bg-primary px-3 py-2 text-xs text-white">Mở trợ lý</Link>}
-    {suggestion && <div className="flex shrink-0 gap-2"><Button size="xs" onClick={() => void respondAmbientSuggestion(suggestion.request_id, true)}>Tắt thiết bị</Button><Button size="xs" variant="ghost" onClick={() => void respondAmbientSuggestion(suggestion.request_id, false)}>Bỏ qua</Button></div>}
-  </div>
-}
 
-function ConnectedVoiceDock({ variant = 'footer', className }: VoiceDockProps) {
-  const isHeader = variant === 'header'
-  const [traceOpen, setTraceOpen] = useState(false)
-  const {
-    wsStatus,
-    agentState,
-    recording,
-    busy,
-    speaking,
-    micError,
-    last,
-    pendingMode,
-    secondsLeft,
-    footerPrompt,
-    actionLabel,
-    traceEvents,
-    traceStatus,
-    toggleMic,
-    cancel,
-    clearPending,
-  } = useVoiceAgentController()
+  function stopAudio() {
+    audio.current?.pause(); audio.current = null
+    if (audioUrl.current) URL.revokeObjectURL(audioUrl.current)
+    audioUrl.current = ''
+  }
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false; stopAudio() }
+  }, [])
 
-  return (
-    <div
-      className={cn(
-        'relative shrink-0',
-        isHeader
-          ? 'min-w-0 flex-1 bg-transparent'
-          : 'border-t border-sidebar-border bg-elevated/95 backdrop-blur-md',
-        className,
-      )}
-    >
-      {traceOpen ? (
-        <div
-          className={cn(
-            'absolute inset-x-0 z-30 overflow-hidden rounded-xl border border-primary/15 bg-surface shadow-elevated',
-            isHeader
-              ? 'top-[calc(100%+0.5rem)]'
-              : 'bottom-[calc(100%+0.5rem)] inset-x-2',
-          )}
-        >
-          <div className="flex items-center justify-between gap-2 border-b border-border-light bg-surface-subtle px-3 py-2">
-            <p className="text-[11px] font-semibold tracking-wide text-primary">
-              Agent trace
-            </p>
-            <button
-              type="button"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-text-muted transition hover:bg-primary-subtle hover:text-primary"
-              aria-label="Đóng agent trace"
-              onClick={() => setTraceOpen(false)}
-            >
-              <CloseIcon className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="p-2">
-            <AgentTracePanel
-              events={traceEvents}
-              status={traceStatus}
-              listClassName="max-h-48"
-            />
-          </div>
-        </div>
-      ) : null}
+  async function speak(text: string) {
+    const current = ++generation.current
+    stopAudio()
+    try {
+      const response = await apiFetch('/api/ai/speech/synthesize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 4000) }) })
+      if (!response.ok) throw new Error(await parseError(response))
+      const blob = await response.blob()
+      if (!mounted.current || current !== generation.current) return
+      audioUrl.current = URL.createObjectURL(blob)
+      const player = new Audio(audioUrl.current); audio.current = player
+      player.onended = () => { stopAudio(); if (mounted.current) setSpeaking(false) }
+      player.onerror = () => { stopAudio(); if (mounted.current) { setSpeaking(false); setError('Không phát được giọng đọc. Phản hồi vẫn hiển thị bên dưới.') } }
+      await player.play()
+      if (mounted.current && current === generation.current) setSpeaking(true)
+    } catch (err) {
+      if (mounted.current && current === generation.current) {
+        stopAudio(); setSpeaking(false)
+        setError(err instanceof Error ? err.message : 'Không phát được giọng đọc.')
+      }
+    }
+  }
 
-      {pendingMode !== 'idle' ? (
-        <div
-          className={cn(
-            'px-3 py-1.5 text-xs',
-            isHeader ? 'rounded-xl' : 'border-b',
-            pendingMode === 'hitl' || pendingMode === 'ambient'
-              ? 'border-amber-400/20 bg-amber-400/10 text-amber-800'
-              : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-900',
-          )}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <p className="leading-snug">{footerPrompt}</p>
-            {pendingMode === 'hitl' || pendingMode === 'ambient' ? (
-              <span className="shrink-0 text-amber-700/70">{secondsLeft}s</span>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            className="mt-0.5 text-[11px] text-[#1E4D38] underline-offset-2 hover:underline"
-            onClick={() => void clearPending()}
-          >
-            Hủy
-          </button>
-        </div>
-      ) : null}
+  async function sendVoice(text: string) {
+    if (inFlight.current) return
+    inFlight.current = true; setBusy(true); setError(''); setTranscript(text); setReply('')
+    try {
+      const response = await sendChat(text, history.current, crypto.randomUUID())
+      if (!mounted.current) return
+      history.current = [...history.current, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: response.reply }].slice(-12)
+      setReply(response.reply); setActions(previous => [...previous, ...response.pending_actions]); setTrace(response.trace)
+      await speak(response.reply)
+    } catch (err) {
+      if (mounted.current) setError(err instanceof Error ? err.message : 'Không xử lý được câu lệnh. Hãy kiểm tra trạng thái trước khi thử lại.')
+    } finally {
+      inFlight.current = false; if (mounted.current) setBusy(false)
+    }
+  }
 
-      <div
-        className={cn(
-          'flex items-center gap-2 sm:gap-3',
-          isHeader ? 'px-0 py-0' : 'px-3 py-3',
-        )}
-      >
-        <button
-          type="button"
-          disabled={busy || speaking || wsStatus !== 'open'}
-          onClick={() => void toggleMic()}
-          className={cn(
-            'relative shrink-0 overflow-hidden rounded-full transition',
-            isHeader ? 'h-10 w-10' : 'h-16 w-16',
-            (busy || speaking || wsStatus !== 'open') &&
-              'cursor-not-allowed opacity-70',
-            recording && 'ring-2 ring-danger/60',
-          )}
-          aria-label={actionLabel}
-        >
-          <AgentAudioVisualizerAura
-            size="sm"
-            state={agentState}
-            color={pendingMode === 'hitl' || pendingMode === 'ambient' ? '#FBBF24' : '#22C55E'}
-            colorShift={0.2}
-            themeMode={isHeader ? 'light' : 'dark'}
-            className="h-full w-full"
-          />
-        </button>
+  async function decide(action: PendingAction, approved: boolean) {
+    if (inFlight.current) return
+    inFlight.current = true; setBusy(true); setError('')
+    try {
+      const result = await decideAction(action.id, approved)
+      if (!mounted.current) return
+      setActions(previous => previous.map(item => item.id === action.id ? result : item))
+      const message = `${action.summary}: ${actionStatusLabels[result.status] ?? result.status}.`
+      setReply(message)
+      history.current = [...history.current, { role: 'assistant' as const, content: message }].slice(-12)
+      await speak(message)
+    } catch (err) { if (mounted.current) setError(err instanceof Error ? err.message : 'Không xử lý được xác nhận.') }
+    finally { inFlight.current = false; if (mounted.current) setBusy(false) }
+  }
 
-        <div className="min-w-0 flex-1">
-          <div className="mb-0.5 flex items-center gap-2">
-            <p
-              className={cn(
-                'text-[10px] font-semibold tracking-[0.12em]',
-                isHeader ? 'text-[#1E4D38]' : 'text-emerald-300',
-              )}
-            >
-              {VOICE_AGENT_STATE_LABEL[agentState] || agentState.toUpperCase()}
-            </p>
-            <span
-              className={cn(
-                'rounded-full px-1.5 py-0.5 text-[9px]',
-                wsStatus === 'open'
-                  ? isHeader
-                    ? 'bg-[#E8F5EB] text-[#2E7D32]'
-                    : 'bg-emerald-400/10 text-emerald-300'
-                  : isHeader
-                    ? 'bg-[#F0F4EE] text-[#88968E]'
-                    : 'bg-white/5 text-white/45',
-              )}
-            >
-              WS {wsStatus}
-            </span>
-          </div>
-          <p
-            className={cn(
-              'truncate text-xs',
-              isHeader ? 'text-[#5A6860]' : 'text-text-secondary',
-            )}
-          >
-            {actionLabel}
-          </p>
-          {busy ? (
-            <p
-              className={cn(
-                'mt-0.5 text-[11px]',
-                isHeader ? 'text-[#1E4D38]' : 'text-emerald-200/80',
-              )}
-            >
-              Đang xử lý…
-            </p>
-          ) : last ? (
-            <div
-              className={cn(
-                'mt-0.5 space-y-0.5 text-[11px] leading-snug',
-                isHeader
-                  ? 'max-h-24 overflow-x-hidden overflow-y-auto pr-1'
-                  : 'max-h-20 overflow-y-auto',
-              )}
-            >
-              {last.transcript !== undefined ? (
-                <p
-                  className={cn(
-                    'truncate',
-                    isHeader ? 'text-[#88968E]' : 'text-text-muted',
-                  )}
-                  title={last.transcript}
-                >
-                  Bạn:{' '}
-                  <span className={isHeader ? 'text-[#5A6860]' : 'text-text-secondary'}>
-                    {last.transcript || '—'}
-                  </span>
-                </p>
-              ) : null}
-              <p
-                className={cn(
-                  'whitespace-pre-wrap break-words',
-                  isHeader ? 'text-[#1C2721]' : 'text-text-primary',
-                )}
-                title={last.response}
-              >
-                Agent: {last.response}
-              </p>
-            </div>
-          ) : (
-            <p
-              className={cn(
-                'mt-0.5 truncate text-[11px]',
-                isHeader ? 'text-[#88968E]' : 'text-text-muted',
-              )}
-            >
-              Nói lệnh — vd. «Bật đèn phòng khách»
-            </p>
-          )}
-          {recording ? (
-            <p className="mt-0.5 animate-pulse text-[11px] text-danger">
-              ● REC — nhấn lại để gửi
-            </p>
-          ) : null}
-          {micError ? (
-            <p className="mt-0.5 text-[11px] text-danger">{micError}</p>
-          ) : null}
-        </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <Button
-            variant={traceOpen ? 'outline' : 'ghost'}
-            size="xs"
-            aria-expanded={traceOpen}
-            aria-label={traceOpen ? 'Đóng agent trace' : 'Mở agent trace'}
-            title="Agent trace"
-            onClick={() => setTraceOpen((open) => !open)}
-          >
-            Trace
-            {traceEvents.length > 0 ? (
-              <span className="ml-1 rounded-full bg-[#1E4D38]/15 px-1.5 text-[9px] text-[#1E4D38]">
-                {traceEvents.length}
-              </span>
-            ) : null}
-          </Button>
-          {recording ? (
-            <Button
-              variant="ghost"
-              size="xs"
-              disabled={busy}
-              onClick={() => cancel()}
-            >
-              Huỷ
-            </Button>
-          ) : null}
+  return <section aria-label="Hội thoại giọng nói" className={cn('min-w-0 flex-1', variant === 'footer' && 'border-t border-border p-3', className)}>
+    <div className="flex min-w-0 items-center gap-2">
+      <MicrophoneButton disabled={busy || speaking} speaking={speaking} pending={actions.some(action => action.status === 'pending')} onActiveChange={setMicActive} onTranscript={value => void sendVoice(value)} />
+      <div className="min-w-0 flex-1 text-left">
+        <span className="block text-[10px] font-semibold tracking-widest text-primary">{speaking ? 'ĐANG TRẢ LỜI' : busy ? 'ĐANG XỬ LÝ' : micActive ? 'ĐANG NGHE / NHẬN DẠNG' : 'TRỢ LÝ GIỌNG NÓI'}</span>
+        <div role="log" aria-label="Nội dung giọng nói" aria-live="polite" className="max-h-24 space-y-0.5 overflow-y-auto break-words pr-1 text-[11px] leading-snug [overflow-wrap:anywhere]">
+          {transcript ? <p className="text-text-secondary">Bạn: {transcript}</p> : <p className="text-text-muted">Nhấn Aura để nói · nhấn lại để gửi</p>}
+          {reply && <p className="whitespace-pre-wrap text-text-primary">HomeMate: {reply}</p>}
+          {busy && !reply && <p role="status" className="text-primary">Đang xử lý…</p>}
+          {error && <p role="alert" className="text-danger">{error}</p>}
         </div>
       </div>
+      {(busy || speaking) && <button type="button" onClick={() => { generation.current++; stopAudio(); setSpeaking(false) }} className="shrink-0 text-xs text-primary">Dừng đọc</button>}
     </div>
-  )
+    <div className="max-h-56 min-w-0 overflow-y-auto">
+      {actions.map(action => <ActionCard key={action.id} action={action} disabled={busy || micActive} processing={busy} onDecide={(item, approved) => void decide(item, approved)} />)}
+      {suggestion && <div className="mt-3 rounded-lg bg-amber-50 p-2 text-xs"><p>{suggestion.message}</p><button type="button" className="mr-3 mt-2 text-primary" onClick={() => void respondAmbientSuggestion(suggestion.request_id, true)}>Tắt thiết bị</button><button type="button" onClick={() => void respondAmbientSuggestion(suggestion.request_id, false)}>Bỏ qua</button></div>}
+      {trace.length > 0 && <details className="mt-3 text-xs text-text-muted"><summary>Agent trace</summary>{trace.map((item, index) => <p key={index}>{item.tool}: {item.status}</p>)}</details>}
+    </div>
+  </section>
 }
