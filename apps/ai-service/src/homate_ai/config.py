@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     openai_model_name: str = 'gpt-4o-mini'
     openrouter_api_key: SecretStr = SecretStr('')
     openrouter_model_name: str = 'openai/gpt-4o-mini'
+    stt_url: str = 'http://127.0.0.1:9020'
+    tts_url: str = 'http://127.0.0.1:9020'
     backend_url: str = 'http://127.0.0.1:8000'
 
     @property
