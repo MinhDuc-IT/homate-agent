@@ -28,13 +28,18 @@ services:
     build: ./apps/ai-service
     environment:
       BACKEND_URL: http://backend:8000
+      STT_URL: http://speech-service:9020
+      TTS_URL: http://speech-service:9020
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL_NAME: ${OPENAI_MODEL_NAME:-gpt-4o-mini}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL_NAME: ${OPENROUTER_MODEL_NAME:-openai/gpt-4o-mini}
     ports: ["127.0.0.1:8010:8010"]
-    depends_on: [backend]
+    depends_on: [backend, speech-service]
+  speech-service:
+    build: ./apps/speech-service
+    ports: ["127.0.0.1:9020:9020"]
   web:
     build: ./apps/web
     ports: ["127.0.0.1:5173:80"]
