@@ -1,6 +1,6 @@
 # Kiến trúc trợ lý HomeMate
 
-AI service cung cấp trợ lý, 17 tools và cơ chế đề xuất thao tác. Backend quản lý dữ liệu, phân quyền, validation và thực thi. STT/TTS local hoạt động qua `SpeechService` và HTTP adapters tới `speech-service` (Sherpa-ONNX + Piper). RAG, audio streaming và ngắt lời tự động chưa triển khai. Xem [luồng giọng nói](voice.md).
+AI service cung cấp trợ lý, 18 tools và cơ chế đề xuất thao tác. Backend quản lý dữ liệu, phân quyền, validation và thực thi. STT/TTS local hoạt động qua `SpeechService` và HTTP adapters tới `speech-service` (Sherpa-ONNX + Piper). RAG gộp ingestion, embedding local và retrieval trong `rag-service`, lưu vector bằng pgvector trong schema `rag` của PostgreSQL hiện tại. AI service gọi RAG qua `KnowledgeRetriever`; RAG xác thực với backend. Audio streaming và ngắt lời tự động chưa triển khai. Xem [luồng giọng nói](voice.md) và [RAG](rag.md).
 
 ## Thành phần và chiều phụ thuộc
 
@@ -59,6 +59,7 @@ Domain/application không import FastAPI, HTTP client hoặc provider SDK. Infra
 | Lịch | create_schedule, update_schedule, delete_schedule | Đề xuất tạo/sửa/xóa |
 | Lịch | set_schedule_enabled | Đề xuất bật/tắt |
 | Lịch | get_schedule_runs | Lịch sử thực thi |
+| Kiến thức | search_knowledge | Tìm đoạn tài liệu trong phạm vi nhà, lọc thiết bị tùy chọn và trả nguồn |
 
 `get_energy_report` nhận period: today, 7days, 30days, 3months, week, month hoặc year. `anchor` dùng YYYY-MM-DD; bỏ trống để dùng ngày hiện tại. Nếu đồng thời lọc phòng và thiết bị, thiết bị phải thuộc phòng đó. Dữ liệu điện năng hiện là ước tính.
 
@@ -88,7 +89,7 @@ Kịch bản đã cấu hình chạy các bước theo thứ tự. Việc hiểu
 
 Frontend giữ tin nhắn trong React state và gửi tối đa 12 tin nhắn user/assistant gần nhất. Backend không lưu hội thoại; reload hoặc rời màn hình chat sẽ mất lịch sử. Lịch sử do client gửi là context, không phải bằng chứng quyền truy cập hay thực thi.
 
-Các đề xuất/receipt và nhật ký được lưu PostgreSQL nhưng chưa được dùng làm memory hội thoại. Chưa có long-term memory, hồ sơ sở thích, RAG hoặc phục hồi hội thoại qua phiên đăng nhập.
+Các đề xuất/receipt và nhật ký được lưu PostgreSQL nhưng chưa được dùng làm memory hội thoại. Chưa có long-term memory, hồ sơ sở thích hoặc phục hồi hội thoại qua phiên đăng nhập. RAG tìm kiến thức từ tài liệu được nạp, không lưu ký ức hội thoại.
 
 ## Xác nhận và chống chạy lặp
 
@@ -130,4 +131,4 @@ Các bước tiếp theo:
 2. Planner có kế hoạch cấu trúc và luồng hỏi lại có trạng thái.
 3. Hội thoại bền vững, phục hồi phiên và xử lý receipt executing.
 4. Audio streaming và ngắt lời; STT/TTS hiện dùng Aura trên header, thu âm theo lượt và tự phát phản hồi.
-5. RAG ingestion/retrieval có nguồn và lọc theo home. Trạng thái thiết bị luôn lấy từ backend tools.
+5. Mở rộng RAG cho PDF/OCR, cập nhật nội dung và đánh giá retrieval; Markdown/TXT có nguồn và lọc theo home đã triển khai. Trạng thái thiết bị luôn lấy từ backend tools.
