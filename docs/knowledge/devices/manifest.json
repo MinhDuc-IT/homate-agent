@@ -1,0 +1,112 @@
+[
+  {
+    "device_id": "ac-bed",
+    "filename": "ac-bed.md",
+    "title": "HomeMate mô phỏng · Điều hòa phòng ngủ"
+  },
+  {
+    "device_id": "ac-living",
+    "filename": "ac-living.md",
+    "title": "HomeMate mô phỏng · Điều hòa phòng khách"
+  },
+  {
+    "device_id": "ac-office",
+    "filename": "ac-office.md",
+    "title": "HomeMate mô phỏng · Điều hòa phòng làm việc"
+  },
+  {
+    "device_id": "cam-balcony",
+    "filename": "cam-balcony.md",
+    "title": "HomeMate mô phỏng · Camera ban công"
+  },
+  {
+    "device_id": "cam-entrance",
+    "filename": "cam-entrance.md",
+    "title": "HomeMate mô phỏng · Camera cửa"
+  },
+  {
+    "device_id": "curtain",
+    "filename": "curtain.md",
+    "title": "HomeMate mô phỏng · Rèm phòng ngủ"
+  },
+  {
+    "device_id": "door",
+    "filename": "door.md",
+    "title": "HomeMate mô phỏng · Cửa chính"
+  },
+  {
+    "device_id": "fan-bath",
+    "filename": "fan-bath.md",
+    "title": "HomeMate mô phỏng · Quạt thông gió"
+  },
+  {
+    "device_id": "fan-bed",
+    "filename": "fan-bed.md",
+    "title": "HomeMate mô phỏng · Quạt trần phòng ngủ"
+  },
+  {
+    "device_id": "fan-kitchen",
+    "filename": "fan-kitchen.md",
+    "title": "HomeMate mô phỏng · Quạt hút bếp"
+  },
+  {
+    "device_id": "heater-bath",
+    "filename": "heater-bath.md",
+    "title": "HomeMate mô phỏng · Máy nước nóng"
+  },
+  {
+    "device_id": "heater-living",
+    "filename": "heater-living.md",
+    "title": "HomeMate mô phỏng · Máy sưởi phòng khách"
+  },
+  {
+    "device_id": "light-balcony",
+    "filename": "light-balcony.md",
+    "title": "HomeMate mô phỏng · Đèn ban công"
+  },
+  {
+    "device_id": "light-bath",
+    "filename": "light-bath.md",
+    "title": "HomeMate mô phỏng · Đèn phòng tắm"
+  },
+  {
+    "device_id": "light-bed",
+    "filename": "light-bed.md",
+    "title": "HomeMate mô phỏng · Đèn phòng ngủ"
+  },
+  {
+    "device_id": "light-kitchen",
+    "filename": "light-kitchen.md",
+    "title": "HomeMate mô phỏng · Đèn bếp"
+  },
+  {
+    "device_id": "light-living",
+    "filename": "light-living.md",
+    "title": "HomeMate mô phỏng · Đèn phòng khách"
+  },
+  {
+    "device_id": "light-office",
+    "filename": "light-office.md",
+    "title": "HomeMate mô phỏng · Đèn bàn làm việc"
+  },
+  {
+    "device_id": "plug-kitchen",
+    "filename": "plug-kitchen.md",
+    "title": "HomeMate mô phỏng · Ổ nồi cơm"
+  },
+  {
+    "device_id": "plug-office",
+    "filename": "plug-office.md",
+    "title": "HomeMate mô phỏng · Ổ máy tính"
+  },
+  {
+    "device_id": "speaker-living",
+    "filename": "speaker-living.md",
+    "title": "HomeMate mô phỏng · Loa phòng khách"
+  },
+  {
+    "device_id": "tv-living",
+    "filename": "tv-living.md",
+    "title": "HomeMate mô phỏng · TV phòng khách"
+  }
+]
