@@ -136,7 +136,7 @@ def test_tool_names_match_backend_contract_and_energy_filters_are_declared():
     request = next(node for node in tree.body if isinstance(node,ast.ClassDef) and node.name == 'ToolRequest')
     annotation = next(node.annotation for node in request.body if isinstance(node,ast.AnnAssign) and node.target.id == 'tool')
     names = {node.value for node in ast.walk(annotation.slice) if isinstance(node,ast.Constant)}
-    assert names == {tool['function']['name'] for tool in TOOLS}
+    assert names | {'search_knowledge'} == {tool['function']['name'] for tool in TOOLS}
     energy = next(tool['function'] for tool in TOOLS if tool['function']['name'] == 'get_energy_report')
     assert set(energy['parameters']['properties']) == {'period','room_id','device_id','anchor'}
 

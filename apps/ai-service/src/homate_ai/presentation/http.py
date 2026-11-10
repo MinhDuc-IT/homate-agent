@@ -24,7 +24,7 @@ class ChatRequest(BaseModel):
 
 @router.get('/status')
 def status(request: Request):
-    return {'text_agent':True, 'configured':bool(request.app.state.settings.api_key), 'voice':bool(request.app.state.settings.stt_url and request.app.state.settings.tts_url), 'stt_configured':bool(request.app.state.settings.stt_url), 'tts_configured':bool(request.app.state.settings.tts_url), 'rag':False}
+    return {'text_agent':True, 'configured':bool(request.app.state.settings.api_key), 'voice':bool(request.app.state.settings.stt_url and request.app.state.settings.tts_url), 'stt_configured':bool(request.app.state.settings.stt_url), 'tts_configured':bool(request.app.state.settings.tts_url), 'rag':True}
 
 
 @router.post('/chat')

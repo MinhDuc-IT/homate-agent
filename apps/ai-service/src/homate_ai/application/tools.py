@@ -7,6 +7,9 @@ def tool(name, description, properties, required):
 
 
 TOOLS = [
+    tool('search_knowledge', 'Tìm hướng dẫn sử dụng, thông số, bảo trì trong tài liệu của nhà. Không dùng cho trạng thái hiện tại. Có thể lọc theo device_id lấy từ snapshot. Trả đoạn nguồn để trích dẫn.', {
+        'query': {'type':'string','minLength':1,'maxLength':2000},
+        'device_id': {'type':['string','null']}}, ['query']),
     tool('get_home_snapshot', 'Đọc phòng, thiết bị, controls và kịch bản hiện tại. Luôn dùng để tìm ID chính xác trước khi điều khiển.', {}, []),
     tool('get_energy_report', 'Đọc điện năng theo kỳ, phòng, thiết bị và ngày tham chiếu. Lấy ID từ snapshot, không đoán ID.', {
         'period': {'type':'string','enum':['today','7days','30days','3months','week','month','year']},
