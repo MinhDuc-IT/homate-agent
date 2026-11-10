@@ -1,3 +1,5 @@
+import { KnowledgeSources } from '@/components/assistant/KnowledgeSources'
+import type { KnowledgeSource } from '@/api/knowledge'
 import { useEffect, useRef, useState } from 'react'
 import { MicrophoneButton } from '@/components/homemind/VoiceMicrophone'
 import { ActionCard } from '@/components/assistant/ActionCard'
@@ -14,6 +16,7 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
   const [micActive, setMicActive] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [reply, setReply] = useState('')
+  const [sources, setSources] = useState<KnowledgeSource[]>([])
   const [error, setError] = useState('')
   const [actions, setActions] = useState<PendingAction[]>([])
   const [trace, setTrace] = useState<{ tool: string; status: string }[]>([])
@@ -60,12 +63,12 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
 
   async function sendVoice(text: string) {
     if (inFlight.current) return
-    inFlight.current = true; setBusy(true); setError(''); setTranscript(text); setReply('')
+    inFlight.current = true; setBusy(true); setError(''); setTranscript(text); setReply(''); setSources([])
     try {
       const response = await sendChat(text, history.current, crypto.randomUUID())
       if (!mounted.current) return
       history.current = [...history.current, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: response.reply }].slice(-12)
-      setReply(response.reply); setActions(previous => [...previous, ...response.pending_actions]); setTrace(response.trace)
+      setSources(response.sources ?? []); setReply(response.reply); setActions(previous => [...previous, ...response.pending_actions]); setTrace(response.trace)
       await speak(response.reply)
     } catch (err) {
       if (mounted.current) setError(err instanceof Error ? err.message : 'Không xử lý được câu lệnh. Hãy kiểm tra trạng thái trước khi thử lại.')
@@ -104,6 +107,7 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
       {(busy || speaking) && <button type="button" onClick={() => { generation.current++; stopAudio(); setSpeaking(false) }} className="shrink-0 text-xs text-primary">Dừng đọc</button>}
     </div>
     <div className="max-h-56 min-w-0 overflow-y-auto">
+      <KnowledgeSources sources={sources} />
       {actions.map(action => <ActionCard key={action.id} action={action} disabled={busy || micActive} processing={busy} onDecide={(item, approved) => void decide(item, approved)} />)}
       {suggestion && <div className="mt-3 rounded-lg bg-amber-50 p-2 text-xs"><p>{suggestion.message}</p><button type="button" className="mr-3 mt-2 text-primary" onClick={() => void respondAmbientSuggestion(suggestion.request_id, true)}>Tắt thiết bị</button><button type="button" onClick={() => void respondAmbientSuggestion(suggestion.request_id, false)}>Bỏ qua</button></div>}
       {trace.length > 0 && <details className="mt-3 text-xs text-text-muted"><summary>Agent trace</summary>{trace.map((item, index) => <p key={index}>{item.tool}: {item.status}</p>)}</details>}

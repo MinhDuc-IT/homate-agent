@@ -1,3 +1,4 @@
+import type { KnowledgeSource } from './knowledge'
 import { apiFetch, readJson } from '@/api/http'
 
 export interface ChatMessage { role: 'user' | 'assistant'; content: string }
@@ -11,6 +12,7 @@ export interface PendingAction {
   result?: Record<string, unknown> | null
 }
 export interface ChatResult {
+  sources?: KnowledgeSource[]
   reply: string
   pending_actions: PendingAction[]
   trace: { tool: string; status: string }[]

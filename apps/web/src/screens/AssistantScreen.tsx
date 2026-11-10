@@ -1,3 +1,5 @@
+import { KnowledgeSources } from '@/components/assistant/KnowledgeSources'
+import type { KnowledgeSource } from '@/api/knowledge'
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { sendChat, decideAction, type ChatMessage, type PendingAction } from '@/api/agent'
 import { TabletScreen } from '@/components/layout/TabletScreen'
@@ -12,6 +14,7 @@ interface ConversationMessage extends ChatMessage {
   time: string
   delivery?: 'sending' | 'sent' | 'failed'
   actions?: PendingAction[]
+  sources?: KnowledgeSource[]
 }
 const suggestions = [
   { icon: 'bulb', title: 'Kiểm tra thiết bị', text: 'Những thiết bị nào đang bật?' },
@@ -58,7 +61,7 @@ export function AssistantScreen() {
     try {
       const response = await sendChat(content, history, id)
       setMessages(previous => [...previous.map(message => message.id === id ? { ...message, delivery: 'sent' as const } : message), {
-        id: crypto.randomUUID(), role: 'assistant', content: response.reply, time: time(), actions: response.pending_actions,
+        id: crypto.randomUUID(), role: 'assistant', content: response.reply, time: time(), actions: response.pending_actions, sources: response.sources,
       }])
     } catch (err) {
       setMessages(previous => previous.map(message => message.id === id ? { ...message, delivery: 'failed' } : message))
@@ -135,6 +138,7 @@ export function AssistantScreen() {
               <div className={`min-w-0 ${message.role === 'user' ? 'max-w-[85%]' : 'max-w-[calc(100%-2.5rem)] flex-1'}`}>
                 <div className={`mb-1.5 flex items-center gap-2 text-[10px] ${message.role === 'user' ? 'justify-end' : ''}`}><span className="font-semibold text-text-secondary">{message.role === 'user' ? 'Bạn' : 'HomeMate'}</span><span className="text-text-muted">{message.time}</span></div>
                 <div className={`rounded-2xl px-4 py-3 text-[13px] leading-6 ${message.role === 'user' ? 'rounded-tr-md bg-primary text-white' : 'rounded-tl-md border border-border-light bg-white text-text-primary'}`}><MessageContent text={message.content} /></div>
+                <KnowledgeSources sources={message.sources} />
                 {message.delivery === 'failed' && <div className="mt-2 flex items-center justify-end gap-2 text-[11px] text-danger"><span>Chưa gửi được</span><button type="button" disabled={busy} onClick={() => void send(message.content, message.id)} className="flex items-center gap-1 rounded-md px-1.5 py-1 font-semibold hover:bg-danger-light disabled:opacity-40"><ChatIcon name="retry" className="h-3 w-3" />Thử lại</button></div>}
                 {message.actions?.map(action => <ActionCard key={action.id} action={action} disabled={busy} processing={decidingId === action.id} onDecide={(item, approved) => void decide(item, approved)} />)}
               </div>
