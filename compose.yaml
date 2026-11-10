@@ -1,7 +1,7 @@
 name: homate
 services:
   db:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:0.8.0-pg17
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-homate}
       POSTGRES_USER: ${POSTGRES_USER:-homate}
@@ -20,6 +20,12 @@ services:
       APP_ENV: ${APP_ENV:-development}
       JWT_SECRET: ${JWT_SECRET:-homate-development-change-this-secret-before-production}
       WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       db:
@@ -28,6 +34,7 @@ services:
     build: ./apps/ai-service
     environment:
       BACKEND_URL: http://backend:8000
+      RAG_URL: http://rag-service:9030
       STT_URL: http://speech-service:9020
       TTS_URL: http://speech-service:9020
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
@@ -36,13 +43,37 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL_NAME: ${OPENROUTER_MODEL_NAME:-openai/gpt-4o-mini}
     ports: ["127.0.0.1:8010:8010"]
-    depends_on: [backend, speech-service]
+    depends_on: [backend, speech-service, rag-service]
+  rag-migrate:
+    image: homate-rag-service
+    build: ./apps/rag-service
+    command: ["python", "-m", "homate_rag.indexing.migrate"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-homate}:${POSTGRES_PASSWORD:-homate_local}@db:5432/${POSTGRES_DB:-homate}
+      RAG_DB_PASSWORD: ${RAG_DB_PASSWORD:-homate_rag_local}
+    depends_on:
+      backend:
+        condition: service_healthy
+  rag-service:
+    image: homate-rag-service
+    build: ./apps/rag-service
+    environment:
+      RAG_DATABASE_URL: postgresql://homate_rag:${RAG_DB_PASSWORD:-homate_rag_local}@db:5432/${POSTGRES_DB:-homate}
+      BACKEND_URL: http://backend:8000
+      KNOWLEDGE_DIRECTORY: /data/knowledge
+      MODEL_CACHE: /models
+    volumes: ["knowledge_files:/data/knowledge"]
+    ports: ["127.0.0.1:9030:9030"]
+    depends_on:
+      rag-migrate:
+        condition: service_completed_successfully
   speech-service:
     build: ./apps/speech-service
     ports: ["127.0.0.1:9020:9020"]
   web:
     build: ./apps/web
     ports: ["127.0.0.1:5173:80"]
-    depends_on: [backend, ai-service]
+    depends_on: [backend, ai-service, rag-service]
 volumes:
   postgres_data:
+  knowledge_files:

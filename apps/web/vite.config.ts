@@ -14,6 +14,7 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     proxy: {
+      '/api/rag': { target: 'http://127.0.0.1:9030', changeOrigin: true, timeout: 300000 },
       '/api/ai': { target: 'http://127.0.0.1:8010', changeOrigin: true, timeout: 300000 },
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/ws': { target: 'ws://127.0.0.1:8000', ws: true },
