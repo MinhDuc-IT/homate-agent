@@ -74,10 +74,11 @@ apps/
     tests/
   ai-service/
     src/homate_ai/
-      domain/
-      application/          # Orchestrator, tools, ports
-      infrastructure/       # LLM và backend HTTP adapters
-      presentation/
+      agent/                # LangGraph: graph, nodes, state, tools, prompts
+      clients/              # LLM, backend và RAG HTTP clients
+      speech/               # Điều phối STT/TTS và speech HTTP client
+      api/                  # Chat, status và speech endpoints
+      contracts.py          # Kiểu giao tiếp giữa các thành phần
       bootstrap.py
     tests/
   web/
@@ -89,7 +90,7 @@ docs/
 compose.yaml
 ```
 
-Domain/application độc lập HTTP và database adapters. Infrastructure hiện thực các port; composition root nối các thành phần. Frontend tổ chức theo màn hình, component, state và HTTP adapters.
+Backend giữ Clean Architecture. AI service tổ chức theo thành phần agent, dùng LangGraph để điều phối các node; bootstrap nối model và các service clients. Frontend tổ chức theo màn hình, component, state và HTTP adapters.
 
 ## Tài liệu
 

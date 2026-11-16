@@ -36,7 +36,7 @@ flowchart LR
     Piper --> Speaker[Trình duyệt phát WAV]
 ```
 
-`application/speech.py` điều phối xác thực và gọi các port. `infrastructure/speech.py` hiện thực hai port bằng HTTP. `presentation/http.py` nhận audio/text và trả transcript/WAV. `bootstrap.py` kết nối các thành phần. Service engine độc lập nằm ở `apps/speech-service/`.
+`speech/service.py` điều phối xác thực và gọi các port. `speech/client.py` hiện thực hai port bằng HTTP. `api/routes.py` nhận audio/text và trả transcript/WAV. `bootstrap.py` kết nối các thành phần. Service engine độc lập nằm ở `apps/speech-service/`.
 
 API công khai, yêu cầu Bearer token:
 

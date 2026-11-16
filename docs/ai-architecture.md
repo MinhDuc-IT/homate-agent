@@ -28,22 +28,46 @@ sequenceDiagram
     API-->>Web: Kết quả + cập nhật thiết bị qua WebSocket
 ```
 
+AI service được tổ chức theo thành phần AI agent:
+
 ```text
 apps/ai-service/src/homate_ai/
-  domain/conversation.py        # ModelReply, ToolCall và lỗi nghiệp vụ
-  application/
-    orchestrator.py             # Vòng điều phối agent
-    tools.py                    # Hợp đồng tools
-    ports.py                    # Model, backend, STT/TTS và retrieval interfaces
-  infrastructure/
-    llm.py                      # Chat Completions adapter
-    backend_client.py           # Backend HTTP adapter
-  presentation/http.py          # Request validation và HTTP routes
-  config.py                     # Cấu hình provider
-  bootstrap.py                  # Composition root và vòng đời HTTP clients
+  agent/
+    graph.py          # StateGraph, edges và Agent.chat
+    state.py          # State riêng của mỗi request
+    nodes.py          # Xác thực, gọi model, chạy tools, trả lời
+    executor.py       # Backend tools và tra cứu RAG, giữ ID chống trùng
+    tools.py          # Schema 18 tools
+    prompts.py        # System prompt
+    models.py         # ModelReply, ToolCall và lỗi
+  clients/            # llm.py, backend.py, rag.py
+  speech/             # service.py, client.py
+  api/routes.py       # Chat, status, STT và TTS endpoints
+  contracts.py        # Protocol cho model và service clients
+  config.py
+  bootstrap.py
 ```
 
-Domain/application không import FastAPI, HTTP client hoặc provider SDK. Infrastructure hiện thực các port. AI service không kết nối PostgreSQL và không có quyền quản trị riêng; mọi tool mang token của người yêu cầu.
+## Luồng LangGraph
+
+```mermaid
+flowchart TD
+    START --> authenticate
+    authenticate --> call_model
+    call_model -->|Có tool calls| execute_tools
+    call_model -->|Trả lời trực tiếp| respond
+    execute_tools -->|Dữ liệu đọc hoặc lỗi tool| call_model
+    execute_tools -->|Có đề xuất chờ xác nhận| respond
+    respond --> END
+```
+
+Graph được compile một lần khi khởi tạo agent, gọi bất đồng bộ bằng `ainvoke` cho mỗi request. Mỗi request có state riêng chứa messages, số lượt LLM, tool trace, đề xuất và nguồn RAG. Giới hạn mặc định 6 lượt gọi LLM; recursion limit của graph được tính theo số node cần chạy.
+
+Luồng vẫn là agent gọi tools, chưa có planner nhiều bước hoặc resolver hỏi rõ được bảo đảm bằng code. LangGraph hiện không dùng checkpointer hay memory dài hạn. Token chỉ dùng trong request để gọi backend/RAG, không đưa vào prompt hoặc lưu checkpoint. Không bật tracing ngoài trong cấu hình hiện tại; nếu thêm tracing cần loại bỏ credentials khỏi dữ liệu trace.
+
+Khi backend trả đề xuất `pending`, graph kết thúc với lời nhắc xác nhận, không gọi thêm LLM. Người dùng xác nhận qua backend như trước; chưa dùng LangGraph interrupt/resume cho bước này. RAG vẫn là service riêng và STT/TTS nằm ngoài graph chat. AI service không truy cập trực tiếp PostgreSQL.
+
+Tham khảo [LangGraph StateGraph](https://reference.langchain.com/python/langgraph/graph/state/StateGraph).
 
 ## Tools hiện có
 
