@@ -1,5 +1,5 @@
 import httpx
-from homate_ai.domain.conversation import BackendError
+from homate_ai.agent.models import BackendError
 
 
 class HttpKnowledgeRetriever:

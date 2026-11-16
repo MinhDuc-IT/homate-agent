@@ -1,9 +1,9 @@
 import asyncio
 from uuid import uuid4
-from homate_ai.application.orchestrator import Agent
-from homate_ai.domain.conversation import ModelReply, ToolCall, BackendError
+from homate_ai.agent.graph import Agent
+from homate_ai.agent.models import ModelReply, ToolCall, BackendError
 import httpx
-from homate_ai.infrastructure.rag import HttpKnowledgeRetriever
+from homate_ai.clients.rag import HttpKnowledgeRetriever
 
 
 class Model:

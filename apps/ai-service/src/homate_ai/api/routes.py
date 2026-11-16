@@ -3,7 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field
-from homate_ai.domain.conversation import AgentUnavailable, BackendError
+from homate_ai.agent.models import AgentUnavailable, BackendError
 
 router = APIRouter(prefix='/api/ai', tags=['text-agent'])
 bearer = HTTPBearer(auto_error=False)

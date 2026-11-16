@@ -7,8 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 from homate_ai.bootstrap import create_app
 from homate_ai.config import Settings
-from homate_ai.domain.conversation import BackendError, AgentUnavailable
-from homate_ai.infrastructure.speech import HttpSpeechRecognizer, HttpSpeechSynthesizer
+from homate_ai.agent.models import BackendError, AgentUnavailable
+from homate_ai.speech.client import HttpSpeechRecognizer, HttpSpeechSynthesizer
 
 
 def wav_bytes():

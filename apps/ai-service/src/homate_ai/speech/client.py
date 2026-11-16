@@ -2,7 +2,7 @@
 import base64
 import binascii
 import httpx
-from homate_ai.domain.conversation import AgentUnavailable
+from homate_ai.agent.models import AgentUnavailable
 
 
 class HttpSpeechRecognizer:

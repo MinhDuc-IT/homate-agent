@@ -1,5 +1,5 @@
 from typing import Protocol
-from homate_ai.domain.conversation import ModelReply
+from homate_ai.agent.models import ModelReply
 
 
 class LanguageModel(Protocol):

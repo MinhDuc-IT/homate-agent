@@ -1,4 +1,4 @@
-from homate_ai.application.ports import BackendTools, SpeechRecognizer, SpeechSynthesizer
+from homate_ai.contracts import BackendTools, SpeechRecognizer, SpeechSynthesizer
 
 
 class SpeechService:

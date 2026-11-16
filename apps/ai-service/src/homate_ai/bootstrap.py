@@ -2,13 +2,13 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI
 from homate_ai.config import Settings
-from homate_ai.infrastructure.rag import HttpKnowledgeRetriever
-from homate_ai.application.speech import SpeechService
-from homate_ai.infrastructure.speech import HttpSpeechRecognizer, HttpSpeechSynthesizer
-from homate_ai.application.orchestrator import Agent
-from homate_ai.infrastructure.backend_client import BackendClient
-from homate_ai.infrastructure.llm import CompatibleChatModel
-from homate_ai.presentation.http import router
+from homate_ai.clients.rag import HttpKnowledgeRetriever
+from homate_ai.speech.service import SpeechService
+from homate_ai.speech.client import HttpSpeechRecognizer, HttpSpeechSynthesizer
+from homate_ai.agent.graph import Agent
+from homate_ai.clients.backend import BackendClient
+from homate_ai.clients.llm import CompatibleChatModel
+from homate_ai.api.routes import router
 
 
 def create_app(settings=None, model=None, backend=None, recognizer=None, synthesizer=None, retriever=None):

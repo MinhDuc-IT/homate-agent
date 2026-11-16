@@ -1,6 +1,6 @@
 import json
 import httpx
-from homate_ai.domain.conversation import AgentUnavailable, ModelReply, ToolCall
+from homate_ai.agent.models import AgentUnavailable, ModelReply, ToolCall
 
 
 class CompatibleChatModel:

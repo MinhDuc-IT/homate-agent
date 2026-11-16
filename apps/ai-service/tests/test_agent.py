@@ -8,10 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 from homate_ai.bootstrap import create_app
 from homate_ai.config import Settings
-from homate_ai.application.orchestrator import Agent
-from homate_ai.domain.conversation import ModelReply, ToolCall, BackendError, AgentUnavailable
-from homate_ai.infrastructure.llm import CompatibleChatModel
-from homate_ai.infrastructure.backend_client import BackendClient
+from homate_ai.agent.graph import Agent
+from homate_ai.agent.models import ModelReply, ToolCall, BackendError, AgentUnavailable
+from homate_ai.clients.llm import CompatibleChatModel
+from homate_ai.clients.backend import BackendClient
 
 
 class Model:
@@ -108,14 +108,34 @@ def test_backend_adapter_propagates_identity_and_permission_errors():
     asyncio.run(run())
 
 
-def test_inner_layers_are_provider_and_transport_independent():
-    root = Path(__file__).parents[1] / 'src' / 'homate_ai'
-    forbidden = ('httpx','fastapi','openai','psycopg','homate_ai.infrastructure','homate_ai.presentation')
-    for folder in ('application','domain'):
-        for file in (root/folder).rglob('*.py'):
-            for node in ast.walk(ast.parse(file.read_text(encoding='utf-8'))):
-                names = [node.module or ''] if isinstance(node,ast.ImportFrom) else [a.name for a in node.names] if isinstance(node,ast.Import) else []
-                assert not any(name == prefix or name.startswith(prefix+'.') for name in names for prefix in forbidden)
+def test_graph_exposes_agent_workflow():
+    agent = Agent(Model([]), Backend())
+    graph = agent.graph.get_graph()
+    assert {'authenticate', 'call_model', 'execute_tools', 'respond'} <= set(graph.nodes)
+    edges = {(edge.source, edge.target) for edge in graph.edges}
+    assert ('execute_tools', 'call_model') in edges
+    assert ('execute_tools', 'respond') in edges
+
+
+def test_shared_graph_isolates_concurrent_request_state():
+    class ConcurrentModel:
+        async def complete(self, messages, tools):
+            await asyncio.sleep(0)
+            text = next(message['content'] for message in messages if message['role'] == 'user')
+            if messages[-1]['role'] == 'tool':
+                return ModelReply(text)
+            return ModelReply(calls=[ToolCall('read', 'get_home_snapshot', {})])
+
+    async def run():
+        agent = Agent(ConcurrentModel(), Backend())
+        first, second = await asyncio.gather(
+            agent.chat('valid', str(uuid4()), 'first', []),
+            agent.chat('valid', str(uuid4()), 'second', []))
+        assert first['reply'] == 'first' and second['reply'] == 'second'
+        assert len(first['trace']) == len(second['trace']) == 1
+        assert first['trace'] is not second['trace']
+        assert not first['pending_actions'] and not second['pending_actions']
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize('name', ['create_scene','update_scene','delete_scene','set_scene_enabled','update_schedule','delete_schedule','set_schedule_enabled'])
@@ -130,7 +150,7 @@ def test_management_tools_are_allowed_and_remain_proposals(name):
 
 
 def test_tool_names_match_backend_contract_and_energy_filters_are_declared():
-    from homate_ai.application.tools import TOOLS
+    from homate_ai.agent.tools import TOOLS
     path = Path(__file__).parents[3] / 'apps' / 'backend' / 'src' / 'homate' / 'presentation' / 'agent_tools.py'
     tree = ast.parse(path.read_text(encoding='utf-8'))
     request = next(node for node in tree.body if isinstance(node,ast.ClassDef) and node.name == 'ToolRequest')
