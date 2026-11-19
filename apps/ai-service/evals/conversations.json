@@ -1,0 +1,25 @@
+[
+  {"id":"temperature-side-question","turns":[
+    {"text":"Giảm điều hòa phòng ngủ 2 độ","plan":true,"device_id":"ac-bed"},
+    {"text":"hiện tại đang là bao nhiêu độ","relation":["follow_up"],"preserve_task":true,"read_device":"ac-bed","read_fields":["temperature"]},
+    {"text":"Vậy đặt 23 độ đi","plan":true,"replace_plan":true,"device_id":"ac-bed","temperature":23}
+  ]},
+  {"id":"clarifying-task-with-interruption","turns":[
+    {"text":"Đặt nhiệt độ điều hòa phòng ngủ giúp tôi","plan":false,"draft":true},
+    {"text":"Khoan, cho tôi biết nó đang đặt mức nào đã","preserve_task":true,"read_device":"ac-bed","read_fields":["temperature"]},
+    {"text":"Vậy tôi chọn 25 độ","plan":true,"device_id":"ac-bed","temperature":25}
+  ]},
+  {"id":"topic-change-then-correction","turns":[
+    {"text":"Tắt đèn phòng khách","plan":true,"device_id":"light-living"},
+    {"text":"À hôm nay cả nhà dùng bao nhiêu điện rồi?","preserve_task":true,"capability":"get_energy_report"},
+    {"text":"Quay lại việc tắt đèn, đổi sang phòng ngủ nhé","plan":true,"replace_plan":true,"device_id":"light-bed"}
+  ]},
+  {"id":"natural-clarification","turns":[
+    {"text":"Tắt đèn giúp tôi","plan":false,"draft":true},
+    {"text":"Ý mình là cái đèn ở phòng khách ấy","plan":true,"device_id":"light-living"}
+  ]},
+  {"id":"explicit-new-read-target","turns":[
+    {"text":"Đặt điều hòa phòng ngủ 24 độ","plan":true,"device_id":"ac-bed"},
+    {"text":"Chuyện khác, đèn phòng khách đang sáng bao nhiêu?","preserve_task":true,"read_device":"light-living","read_fields":["brightness"]}
+  ]}
+]

@@ -1,12 +1,23 @@
 from uuid import UUID
+import logging
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field
 from homate_ai.agent.models import AgentUnavailable, BackendError
+from homate_ai.agent.capabilities import catalog
+from homate_ai.agent.interpretation import AnalysisReport
 
 router = APIRouter(prefix='/api/ai', tags=['text-agent'])
 bearer = HTTPBearer(auto_error=False)
+logger = logging.getLogger(__name__)
+
+
+def unavailable(error):
+    headers = {'X-Agent-Error': error.code}
+    if error.provider_status is not None:
+        headers['X-Provider-Status'] = str(error.provider_status)
+    return HTTPException(503, str(error), headers=headers)
 
 
 class Message(BaseModel):
@@ -20,6 +31,8 @@ class ChatRequest(BaseModel):
     request_id: UUID
     text: str = Field(min_length=1, max_length=4000)
     history: list[Message] = Field(default_factory=list, max_length=12)
+    conversation_id: UUID | None = None
+    conversation_version: int | None = Field(default=None, ge=0)
 
 
 @router.get('/status')
@@ -31,14 +44,50 @@ def status(request: Request):
 async def chat(body: ChatRequest, request: Request, credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
     if not credentials: raise HTTPException(401, 'Vui lòng đăng nhập')
     try:
-        return await request.app.state.agent.chat(credentials.credentials, str(body.request_id), body.text, [m.model_dump() for m in body.history])
+        return await request.app.state.agent.chat(credentials.credentials, str(body.request_id), body.text,
+            [m.model_dump() for m in body.history], str(body.conversation_id) if body.conversation_id else None,
+            body.conversation_version)
     except BackendError as error: raise HTTPException(error.status, str(error)) from None
-    except AgentUnavailable as error: raise HTTPException(503, str(error)) from None
+    except AgentUnavailable as error:
+        logger.warning('agent_chat_failed request_id=%s code=%s provider_status=%s',
+                       body.request_id, error.code, error.provider_status)
+        raise unavailable(error) from None
+
+
+@router.get('/capabilities')
+async def capabilities(request: Request, credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    if not credentials: raise HTTPException(401, 'Vui lòng đăng nhập')
+    try:
+        await request.app.state.agent_backend.identity(credentials.credentials)
+        return catalog()
+    except BackendError as error: raise HTTPException(error.status, str(error)) from None
+    except AgentUnavailable as error: raise unavailable(error) from None
+
+
+@router.post('/analyze', response_model=AnalysisReport)
+async def analyze(body: ChatRequest, request: Request, credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    """Observe interpretation and validation; never create or execute actions."""
+    if not credentials: raise HTTPException(401, 'Vui lòng đăng nhập')
+    try:
+        return await request.app.state.analyzer.analyze(
+            credentials.credentials, str(body.request_id), body.text,
+            [m.model_dump() for m in body.history])
+    except BackendError as error: raise HTTPException(error.status, str(error)) from None
+    except AgentUnavailable as error: raise unavailable(error) from None
 
 
 class SpeakRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     text: str = Field(min_length=1, max_length=4000)
+
+
+@router.post('/plans/{identifier}/summary')
+async def plan_summary(identifier: UUID, request: Request, credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    if not credentials: raise HTTPException(401, 'Vui lòng đăng nhập')
+    try:
+        return await request.app.state.agent.summarize(credentials.credentials, str(identifier))
+    except BackendError as error: raise HTTPException(error.status, str(error)) from None
+    except AgentUnavailable as error: raise unavailable(error) from None
 
 
 @router.post('/speech/transcribe')
@@ -57,7 +106,7 @@ async def transcribe(request: Request, credentials: HTTPAuthorizationCredentials
         text = await request.app.state.speech.transcribe(credentials.credentials, bytes(audio), 'audio/wav')
         return {'text': text}
     except BackendError as error: raise HTTPException(error.status, str(error)) from None
-    except AgentUnavailable as error: raise HTTPException(503, str(error)) from None
+    except AgentUnavailable as error: raise unavailable(error) from None
 
 
 @router.post('/speech/synthesize')
@@ -68,4 +117,4 @@ async def synthesize(body: SpeakRequest, request: Request, credentials: HTTPAuth
         audio = await request.app.state.speech.synthesize(credentials.credentials, body.text.strip())
         return Response(audio, media_type='audio/wav', headers={'Cache-Control':'no-store'})
     except BackendError as error: raise HTTPException(error.status, str(error)) from None
-    except AgentUnavailable as error: raise HTTPException(503, str(error)) from None
+    except AgentUnavailable as error: raise unavailable(error) from None

@@ -1,16 +1,16 @@
-from typing import TypedDict
-from homate_ai.agent.models import ModelReply
+from homate_ai.agent.analysis import AnalysisState
 
 
-class AgentState(TypedDict):
-    token: str
-    request_id: str
-    text: str
-    history: list[dict]
-    messages: list[dict]
-    rounds: int
-    model_reply: ModelReply
-    reply: str
-    trace: list[dict]
-    pending_actions: list[dict]
-    sources: list[dict]
+class ConversationState(AnalysisState, total=False):
+    conversation_id: str | None
+    conversation_version: int | None
+    session: dict
+    cached: bool
+    response: dict
+    fixed_reply: str
+    planning_error: str
+    steps: list[dict]
+    next_state: dict
+    invalidate: bool
+    lease: dict
+    observations: list[dict]
