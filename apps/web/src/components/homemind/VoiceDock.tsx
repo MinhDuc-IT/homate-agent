@@ -5,7 +5,9 @@ import { MicrophoneButton } from '@/components/homemind/VoiceMicrophone'
 import { ActionCard } from '@/components/assistant/ActionCard'
 import { actionStatusLabels } from '@/components/assistant/actionStatus'
 import { apiFetch, parseError } from '@/api/http'
-import { sendChat, decideAction, type ChatMessage, type PendingAction } from '@/api/agent'
+import { sendChat, decideAction, recoverPlan, restoreConversation, storeConversation, reconcileActions, summarizePlan,
+  type ConversationReference, type ChatMessage, type PendingAction } from '@/api/agent'
+import { useSession } from '@/context/SessionContext'
 import { useDevices } from '@/context/DevicesContext'
 import { cn } from '@/utils/cn'
 
@@ -21,6 +23,8 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
   const [actions, setActions] = useState<PendingAction[]>([])
   const [trace, setTrace] = useState<{ tool: string; status: string }[]>([])
   const history = useRef<ChatMessage[]>([])
+  const conversation = useRef<ConversationReference>({})
+  const { session } = useSession()
   const audio = useRef<HTMLAudioElement | null>(null)
   const audioUrl = useRef('')
   const generation = useRef(0)
@@ -28,6 +32,19 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
   const mounted = useRef(false)
   const { ambientSuggestions, respondAmbientSuggestion } = useDevices()
   const suggestion = ambientSuggestions[0]
+
+  useEffect(() => {
+    let active = true
+    if (!session?.memberId) return
+    void restoreConversation(session.memberId, 'voice').then(saved => {
+      if (!active) return
+      conversation.current = saved ? { id: saved.id, version: saved.version } : {}
+      history.current = saved?.messages.map(({ role, content }) => ({ role, content })).slice(-12) ?? []
+      setActions(saved?.plan ? [saved.plan] : [])
+      setReply(saved?.messages.filter(message => message.role === 'assistant').at(-1)?.content ?? '')
+    })
+    return () => { active = false }
+  }, [session?.memberId])
 
   function stopAudio() {
     audio.current?.pause(); audio.current = null
@@ -65,10 +82,14 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
     if (inFlight.current) return
     inFlight.current = true; setBusy(true); setError(''); setTranscript(text); setReply(''); setSources([])
     try {
-      const response = await sendChat(text, history.current, crypto.randomUUID())
+      const response = await sendChat(text, history.current, crypto.randomUUID(), conversation.current)
       if (!mounted.current) return
+      if (session?.memberId) conversation.current = storeConversation(session.memberId, 'voice', response)
       history.current = [...history.current, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: response.reply }].slice(-12)
-      setSources(response.sources ?? []); setReply(response.reply); setActions(previous => [...previous, ...response.pending_actions]); setTrace(response.trace)
+      setSources(response.sources ?? []); setReply(response.reply); setActions(previous => {
+        const merged = reconcileActions(previous, response)
+        return [...merged.filter(item => !response.pending_actions.some(next => next.id === item.id)), ...response.pending_actions]
+      }); setTrace(response.trace)
       await speak(response.reply)
     } catch (err) {
       if (mounted.current) setError(err instanceof Error ? err.message : 'Không xử lý được câu lệnh. Hãy kiểm tra trạng thái trước khi thử lại.')
@@ -77,14 +98,15 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
     }
   }
 
-  async function decide(action: PendingAction, approved: boolean) {
+  async function decide(action: PendingAction, approved: boolean, recovering = false) {
     if (inFlight.current) return
     inFlight.current = true; setBusy(true); setError('')
     try {
-      const result = await decideAction(action.id, approved)
+      const result = await (recovering ? recoverPlan(action) : decideAction(action, approved))
       if (!mounted.current) return
       setActions(previous => previous.map(item => item.id === action.id ? result : item))
-      const message = `${action.summary}: ${actionStatusLabels[result.status] ?? result.status}.`
+      const summary = await summarizePlan(result)
+      const message = summary ?? `${action.summary}: ${actionStatusLabels[result.status] ?? result.status}.`
       setReply(message)
       history.current = [...history.current, { role: 'assistant' as const, content: message }].slice(-12)
       await speak(message)
@@ -108,7 +130,7 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
     </div>
     <div className="max-h-56 min-w-0 overflow-y-auto">
       <KnowledgeSources sources={sources} />
-      {actions.map(action => <ActionCard key={action.id} action={action} disabled={busy || micActive} processing={busy} onDecide={(item, approved) => void decide(item, approved)} />)}
+      {actions.map(action => <ActionCard key={action.id} action={action} disabled={busy || micActive} processing={busy} onDecide={(item, approved) => void decide(item, approved)} onRecover={item => void decide(item, false, true)} />)}
       {suggestion && <div className="mt-3 rounded-lg bg-amber-50 p-2 text-xs"><p>{suggestion.message}</p><button type="button" className="mr-3 mt-2 text-primary" onClick={() => void respondAmbientSuggestion(suggestion.request_id, true)}>Tắt thiết bị</button><button type="button" onClick={() => void respondAmbientSuggestion(suggestion.request_id, false)}>Bỏ qua</button></div>}
       {trace.length > 0 && <details className="mt-3 text-xs text-text-muted"><summary>Agent trace</summary>{trace.map((item, index) => <p key={index}>{item.tool}: {item.status}</p>)}</details>}
     </div>

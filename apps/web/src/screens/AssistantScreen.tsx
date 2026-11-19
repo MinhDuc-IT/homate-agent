@@ -1,7 +1,8 @@
 import { KnowledgeSources } from '@/components/assistant/KnowledgeSources'
 import type { KnowledgeSource } from '@/api/knowledge'
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { sendChat, decideAction, type ChatMessage, type PendingAction } from '@/api/agent'
+import { sendChat, decideAction, recoverPlan, restoreConversation, storeConversation, conversationKey, reconcileActions, closeConversation, summarizePlan,
+  type ConversationReference, type ChatMessage, type PendingAction } from '@/api/agent'
 import { TabletScreen } from '@/components/layout/TabletScreen'
 import { Modal, ModalBody, ModalHeader } from '@/components/ui/Modal'
 import { ActionCard } from '@/components/assistant/ActionCard'
@@ -38,6 +39,24 @@ export function AssistantScreen() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const nearBottom = useRef(true)
   const inFlight = useRef(false)
+  const conversation = useRef<ConversationReference>({})
+  const [restoring, setRestoring] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    if (!session?.memberId) return
+    void restoreConversation(session.memberId, 'chat').then(saved => {
+      if (!active) return
+      conversation.current = saved ? { id: saved.id, version: saved.version } : {}
+      if (saved) {
+        const restored: ConversationMessage[] = saved.messages.map(message => ({ ...message, id: crypto.randomUUID(), time: time() }))
+        if (saved.plan && restored.length) restored[restored.length - 1].actions = [saved.plan]
+        setMessages(restored)
+      }
+      setRestoring(false)
+    })
+    return () => { active = false }
+  }, [session?.memberId])
 
   useEffect(() => {
     const element = inputRef.current
@@ -49,7 +68,7 @@ export function AssistantScreen() {
   }, [messages, sending])
 
   async function send(input: string, retryId?: string) {
-    if (!input.trim() || inFlight.current) return
+    if (!input.trim() || inFlight.current || restoring) return
     const content = input.trim()
     const id = retryId ?? crypto.randomUUID()
     const history = messages.filter(message => message.id !== retryId && message.delivery !== 'failed' && message.delivery !== 'sending').map(({ role, content }) => ({ role, content }))
@@ -59,8 +78,10 @@ export function AssistantScreen() {
     const userMessage: ConversationMessage = { id, role: 'user', content, time: time(), delivery: 'sending' }
     setMessages(previous => retryId ? previous.map(message => message.id === retryId ? userMessage : message) : [...previous, userMessage])
     try {
-      const response = await sendChat(content, history, id)
-      setMessages(previous => [...previous.map(message => message.id === id ? { ...message, delivery: 'sent' as const } : message), {
+      const response = await sendChat(content, history, id, conversation.current)
+      if (session?.memberId) conversation.current = storeConversation(session.memberId, 'chat', response)
+      setMessages(previous => [...previous.map(message => ({ ...(message.id === id ? { ...message, delivery: 'sent' as const } : message),
+        actions: message.actions ? reconcileActions(message.actions, response).filter(action => !response.pending_actions.some(next => next.id === action.id)) : undefined })), {
         id: crypto.randomUUID(), role: 'assistant', content: response.reply, time: time(), actions: response.pending_actions, sources: response.sources,
       }])
     } catch (err) {
@@ -83,21 +104,28 @@ export function AssistantScreen() {
       if (text.trim() && !busy) inputRef.current?.form?.requestSubmit()
     }
   }
-  async function decide(action: PendingAction, approved: boolean) {
+  async function decide(action: PendingAction, approved: boolean, recovering = false) {
     if (inFlight.current) return
     inFlight.current = true
     setBusy(true); setDecidingId(action.id); setError('')
     try {
-      const result = await decideAction(action.id, approved)
+      const result = await (recovering ? recoverPlan(action) : decideAction(action, approved))
       const status = actionStatusLabels[result.status] ?? result.status
+      const summary = await summarizePlan(result)
       setMessages(previous => [...previous.map(message => ({ ...message, actions: message.actions?.map(item => item.id === action.id ? result : item) })), {
-        id: crypto.randomUUID(), role: 'assistant', content: `${action.summary}: ${status}.`, time: time(),
+        id: crypto.randomUUID(), role: 'assistant', content: summary ?? `${action.summary}: ${status}.`, time: time(),
       }])
     } catch (err) { setError(err instanceof Error ? err.message : 'Không xử lý được xác nhận. Vui lòng kiểm tra trạng thái trước khi thử lại.') }
     finally { inFlight.current = false; setBusy(false); setDecidingId(null) }
   }
   function chooseSuggestion(value: string) { setText(value); inputRef.current?.focus() }
-  function reset() {
+  async function reset() {
+    if (conversation.current.id) {
+      try { await closeConversation(conversation.current.id) }
+      catch (err) { setError(err instanceof Error ? err.message : 'Chưa đóng được hội thoại.'); return }
+    }
+    if (session?.memberId) localStorage.removeItem(conversationKey(session.memberId, 'chat'))
+    conversation.current = {}
     setMessages([]); setText(''); setError(''); setNewChatOpen(false); setShowJump(false)
     nearBottom.current = true
     inputRef.current?.focus()
@@ -140,7 +168,7 @@ export function AssistantScreen() {
                 <div className={`rounded-2xl px-4 py-3 text-[13px] leading-6 ${message.role === 'user' ? 'rounded-tr-md bg-primary text-white' : 'rounded-tl-md border border-border-light bg-white text-text-primary'}`}><MessageContent text={message.content} /></div>
                 <KnowledgeSources sources={message.sources} />
                 {message.delivery === 'failed' && <div className="mt-2 flex items-center justify-end gap-2 text-[11px] text-danger"><span>Chưa gửi được</span><button type="button" disabled={busy} onClick={() => void send(message.content, message.id)} className="flex items-center gap-1 rounded-md px-1.5 py-1 font-semibold hover:bg-danger-light disabled:opacity-40"><ChatIcon name="retry" className="h-3 w-3" />Thử lại</button></div>}
-                {message.actions?.map(action => <ActionCard key={action.id} action={action} disabled={busy} processing={decidingId === action.id} onDecide={(item, approved) => void decide(item, approved)} />)}
+                {message.actions?.map(action => <ActionCard key={action.id} action={action} disabled={busy} processing={decidingId === action.id} onDecide={(item, approved) => void decide(item, approved)} onRecover={item => void decide(item, false, true)} />)}
               </div>
             </article>)}
             {sending && <div className="flex items-start gap-2.5" role="status"><span className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary-subtle text-primary"><ChatIcon name="sparkle" /></span><div className="rounded-2xl rounded-tl-md border border-border-light bg-white px-4 py-3"><span className="flex items-center gap-1 text-primary" aria-hidden="true">{[0, 1, 2].map(i => <span key={i} style={{ animationDelay: `${i * 150}ms` }} className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 motion-reduce:animate-none" />)}</span><p className="mt-2 text-[11px] text-text-muted">HomeMate đang xử lý…</p></div></div>}
@@ -163,7 +191,7 @@ export function AssistantScreen() {
     </section>
     <Modal open={newChatOpen} onClose={() => setNewChatOpen(false)} maxWidth="sm">
       <ModalHeader title="Bắt đầu cuộc trò chuyện mới?" />
-      <ModalBody><p className="text-sm leading-6 text-text-secondary">Nội dung trò chuyện hiện tại sẽ được xóa khỏi màn hình. Các yêu cầu chưa xác nhận sẽ tự hết hạn.</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setNewChatOpen(false)} className="rounded-xl border border-border px-4 py-2 text-sm">Quay lại</button><button type="button" onClick={reset} className="rounded-xl bg-primary px-4 py-2 text-sm text-white">Bắt đầu mới</button></div></ModalBody>
+      <ModalBody><p className="text-sm leading-6 text-text-secondary">Hội thoại mới sẽ hủy kế hoạch đang chờ. Các thao tác đã thực thi không bị hoàn tác.</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setNewChatOpen(false)} className="rounded-xl border border-border px-4 py-2 text-sm">Quay lại</button><button type="button" onClick={() => void reset()} className="rounded-xl bg-primary px-4 py-2 text-sm text-white">Bắt đầu mới</button></div></ModalBody>
     </Modal>
   </TabletScreen>
 }
