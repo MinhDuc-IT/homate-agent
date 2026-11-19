@@ -74,7 +74,7 @@ apps/
     tests/
   ai-service/
     src/homate_ai/
-      agent/                # LangGraph: graph, nodes, state, tools, prompts
+      agent/                # LangGraph: graph, runtime, planner, validation, tools
       clients/              # LLM, backend và RAG HTTP clients
       speech/               # Điều phối STT/TTS và speech HTTP client
       api/                  # Chat, status và speech endpoints
@@ -93,6 +93,8 @@ compose.yaml
 Backend giữ Clean Architecture. AI service tổ chức theo thành phần agent, dùng LangGraph để điều phối các node; bootstrap nối model và các service clients. Frontend tổ chức theo màn hình, component, state và HTTP adapters.
 
 ## Tài liệu
+
+Chat và Aura dùng workflow hội thoại LangGraph, capability registry và kế hoạch có phiên bản. `/api/ai/analyze` cung cấp phân tích chỉ đọc; bộ đánh giá gồm 28 câu tiếng Việt. Xem [hướng dẫn agent workflow](docs/agent-workflow.md).
 
 - [Cài đặt, cấu hình, chạy local và Docker](docs/getting-started.md)
 - [Kiến trúc AI, tools, memory và xác nhận](docs/ai-architecture.md)
@@ -122,6 +124,6 @@ Không có `TEST_DATABASE_URL`, integration tests backend được skip. Các te
 
 ## Phạm vi hiện tại
 
-Agent dùng ngữ cảnh tối đa 12 tin nhắn gần nhất do frontend gửi; lịch sử mất khi reload/rời trang chat. Chưa có memory bền vững hoặc planner bảo đảm chuỗi thao tác tự do. Các trường hợp mơ hồ/thiếu thông tin dựa vào LLM hỏi lại, cần đánh giá bằng bộ câu thực tế.
+Chat/Aura có hội thoại lưu phía server, hỏi rõ nhiều lượt, sửa/hủy yêu cầu, kế hoạch có phiên bản và kết quả từng bước. Chưa có memory sở thích dài hạn. Xem [agent workflow](docs/agent-workflow.md).
 
 Backend hiện dành cho một process. Receipt chống thực thi lặp nhưng không tạo transaction nguyên tử cho mọi side effect; kịch bản có thể chạy một phần khi persistence lỗi. Chi tiết phục hồi và trạng thái xác nhận xem tài liệu AI.

@@ -1,5 +1,7 @@
 # Giọng nói local
 
+Aura dùng [agent workflow](agent-workflow.md) và lưu hội thoại phía backend. Kênh voice có ID riêng với chat, được khôi phục khi tải lại trang. Kế hoạch hiển thị ngay trong header; xác nhận bằng nút gửi đúng phiên bản tới backend, không thực thi chỉ từ lời nói “đồng ý”. Kế hoạch gián đoạn cần kiểm tra thiết bị và xác nhận thủ công trước khi đóng; không tự chạy lại.
+
 STT dùng Sherpa-ONNX Zipformer tiếng Việt 30M int8; TTS dùng Piper với giọng `vi_VN-vais1000-medium`. Không cần key STT/TTS. LLM vẫn dùng OpenAI/OpenRouter như cấu hình hiện tại.
 
 ## Chạy Docker
@@ -20,7 +22,7 @@ Mở `http://localhost:5173`, đăng nhập rồi dùng Aura trên header của 
 4. Câu lệnh và phản hồi hiển thị ngay cạnh Aura trong header; nội dung dài có thể cuộn.
 5. Với thao tác thay đổi dữ liệu, bấm xác nhận hoặc từ chối trên thẻ đề xuất trong header. Kết quả được đọc bằng TTS.
 
-Voice tự gửi bản nhận dạng vào agent nhưng không tự chấp nhận thao tác. Audio không được lưu vào database. Lịch sử voice giữ riêng trong bộ nhớ header, tối đa 12 tin gửi vào agent; trang Assistant giữ chat văn bản riêng. Chưa có wake word hoặc streaming. Trình duyệt cần HTTPS hoặc localhost; truy cập bằng IP LAN qua HTTP thường không được phép dùng micro. Nếu trình duyệt chặn tự phát audio, phản hồi vẫn hiển thị trong header.
+Voice tự gửi bản nhận dạng vào agent nhưng không tự chấp nhận thao tác. Audio không được lưu vào database. Lịch sử voice lưu ở backend theo hội thoại riêng; frontend chỉ lưu ID để khôi phục. Chưa có wake word hoặc streaming. Trình duyệt cần HTTPS hoặc localhost; truy cập bằng IP LAN qua HTTP thường không được phép dùng micro. Nếu trình duyệt chặn tự phát audio, phản hồi vẫn hiển thị trong header.
 
 ## Luồng và phân lớp
 
