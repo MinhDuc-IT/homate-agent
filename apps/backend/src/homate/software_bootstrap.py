@@ -10,6 +10,9 @@ from fastapi.responses import JSONResponse
 from homate.application.household import HouseholdService, HOME_ID
 from homate.application.agent_actions import AgentActionService
 from homate.infrastructure.postgres.agent_actions import PostgresActionRepository
+from homate.application.agent_workflow import AgentWorkflowService
+from homate.infrastructure.postgres.agent_workflow import PostgresWorkflowRepository
+from homate.presentation import agent_workflow
 from homate.presentation import agent_tools
 from homate.config import get_settings
 from homate.infrastructure.postgres import household
@@ -52,6 +55,7 @@ def create_app(database_url=None, *, start_workers=True):
         app.state.weather_cache = WeatherCache(api_key=configuration.weather_api_key, lat=configuration.weather_lat, lon=configuration.weather_lon, ttl_seconds=configuration.weather_ttl_seconds)
         app.state.database_url = database_url
         app.state.agent_action_service = AgentActionService(PostgresActionRepository(database_url))
+        app.state.agent_workflow_service = AgentWorkflowService(PostgresWorkflowRepository(database_url))
         pending_hitl.bind_ui_manager(manager)
         pending_hitl.set_ttl_seconds(service.get_home_settings(HOME_ID)["hitl_timeout_seconds"])
         meter.record_all(store.list())
@@ -69,6 +73,7 @@ def create_app(database_url=None, *, start_workers=True):
     for module in (auth, dashboard, users, scenes, schedules, settings, ambient, energy): app.include_router(module.router)
     app.include_router(dashboard.ws_router)
     app.include_router(agent_tools.router)
+    app.include_router(agent_workflow.router)
 
     @app.exception_handler(psycopg.IntegrityError)
     async def invalid_relation(request: Request, error):

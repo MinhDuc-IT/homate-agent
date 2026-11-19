@@ -9,7 +9,7 @@ import jwt
 
 from homate.config import get_settings
 
-TokenType = Literal["access", "refresh"]
+TokenType = Literal["access", "refresh", "agent_cleanup"]
 
 
 def _encode(payload: dict[str, Any], *, minutes: float | None = None, days: float | None = None) -> str:
@@ -49,6 +49,12 @@ def create_refresh_token(*, user_id: str, role: str, home_id: str, name: str) ->
         },
         days=settings.jwt_refresh_days,
     )
+
+
+def create_agent_cleanup_token(*, user_id: str, home_id: str, request_id: str, lease_id: str) -> str:
+    """Narrow cleanup capability; never valid for access or execution."""
+    return _encode({'sub': user_id, 'home_id': home_id, 'request_id': request_id,
+                    'lease_id': lease_id, 'typ': 'agent_cleanup'}, minutes=10)
 
 
 def decode_token(token: str, *, expected: TokenType) -> dict[str, Any]:
