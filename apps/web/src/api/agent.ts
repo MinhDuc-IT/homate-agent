@@ -25,6 +25,7 @@ export interface ChatResult {
   sources?: KnowledgeSource[]
   reply: string
   pending_actions: PendingAction[]
+  completed_actions?: PendingAction[]
   trace: { tool: string; status: string }[]
 }
 export interface ConversationReference { id?: string; version?: number }

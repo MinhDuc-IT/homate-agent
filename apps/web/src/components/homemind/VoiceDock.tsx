@@ -88,7 +88,8 @@ export function VoiceDock({ variant = 'footer', className }: { variant?: 'footer
       history.current = [...history.current, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: response.reply }].slice(-12)
       setSources(response.sources ?? []); setReply(response.reply); setActions(previous => {
         const merged = reconcileActions(previous, response)
-        return [...merged.filter(item => !response.pending_actions.some(next => next.id === item.id)), ...response.pending_actions]
+        const incoming = [...(response.completed_actions ?? []), ...response.pending_actions]
+        return [...merged.filter(item => !incoming.some(next => next.id === item.id)), ...incoming]
       }); setTrace(response.trace)
       await speak(response.reply)
     } catch (err) {

@@ -48,6 +48,19 @@ test('refresh after chat 401 retries the identical request body and request_id',
   expect(bodies[0].request_id).toEqual(expect.any(String))
 })
 
+test('routine execution displays receipt without confirmation buttons', async ({ page }) => {
+  await page.route('**/api/ai/chat', route => route.fulfill({ json: {
+    reply: 'Đã bật đèn phòng khách.', pending_actions: [],
+    completed_actions: [{ ...action(), status: 'executed', steps: [{ ordinal: 0, summary: 'Bật đèn phòng khách', status: 'succeeded' }] }],
+    trace: [], conversation_id: conversationId, conversation_version: 1,
+  } }))
+  await login(page)
+  await send(page, 'Bật đèn phòng khách')
+  await expect(page.getByText('Đã bật đèn phòng khách.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Xác nhận', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('list', { name: 'Kết quả từng bước' })).toContainText('Thành công')
+})
+
 test('interrupted plan requires manual acknowledgement before closing', async ({ page }) => {
   const interrupted = { ...action(), status: 'executing', recovery_required: true,
     steps: [{ ordinal: 0, summary: 'Tắt đèn phòng khách', status: 'running' }] }

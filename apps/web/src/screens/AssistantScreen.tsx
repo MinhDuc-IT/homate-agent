@@ -82,7 +82,7 @@ export function AssistantScreen() {
       if (session?.memberId) conversation.current = storeConversation(session.memberId, 'chat', response)
       setMessages(previous => [...previous.map(message => ({ ...(message.id === id ? { ...message, delivery: 'sent' as const } : message),
         actions: message.actions ? reconcileActions(message.actions, response).filter(action => !response.pending_actions.some(next => next.id === action.id)) : undefined })), {
-        id: crypto.randomUUID(), role: 'assistant', content: response.reply, time: time(), actions: response.pending_actions, sources: response.sources,
+        id: crypto.randomUUID(), role: 'assistant', content: response.reply, time: time(), actions: [...(response.completed_actions ?? []), ...response.pending_actions], sources: response.sources,
       }])
     } catch (err) {
       setMessages(previous => previous.map(message => message.id === id ? { ...message, delivery: 'failed' } : message))
