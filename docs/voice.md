@@ -20,7 +20,7 @@ Mở `http://localhost:5173`, đăng nhập rồi dùng Aura trên header của 
 2. Nói, sau đó bấm Aura lần nữa để gửi. Bản ghi tự dừng và gửi sau 60 giây.
 3. STT chuyển audio thành text, agent xử lý và TTS tự phát phản hồi. Có thể bấm **Dừng đọc**.
 4. Câu lệnh và phản hồi hiển thị ngay cạnh Aura trong header; nội dung dài có thể cuộn.
-5. Với thao tác thay đổi dữ liệu, bấm xác nhận hoặc từ chối trên thẻ đề xuất trong header. Kết quả được đọc bằng TTS.
+5. Thao tác thông thường hợp lệ được backend thực hiện ngay và đọc kết quả bằng TTS. Với thao tác nhạy cảm hoặc phạm vi lớn, bấm xác nhận hoặc từ chối trên thẻ đề xuất trong header theo [chính sách](agent-workflow.md).
 
 Voice tự gửi bản nhận dạng vào agent nhưng không tự chấp nhận thao tác. Audio không được lưu vào database. Lịch sử voice lưu ở backend theo hội thoại riêng; frontend chỉ lưu ID để khôi phục. Chưa có wake word hoặc streaming. Trình duyệt cần HTTPS hoặc localhost; truy cập bằng IP LAN qua HTTP thường không được phép dùng micro. Nếu trình duyệt chặn tự phát audio, phản hồi vẫn hiển thị trong header.
 

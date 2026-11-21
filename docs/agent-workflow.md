@@ -1,5 +1,29 @@
 # Agent workflow
 
+## Xung đột thiết bị
+
+`device_conflicts` là nguồn quy tắc chính thức. Backend đọc lại quy tắc khi ghi trạng thái, đối chiếu cả thiết bị đang chạy và từng trạng thái trung gian của kế hoạch. Cặp khai báo một chiều vẫn được kiểm tra hai chiều; `same_room` chỉ áp dụng trong cùng phòng. Không tự suy luận thêm cặp cấm từ tên thiết bị. Thiết bị có `power` dùng trạng thái đó; quạt không có `power` dùng `speed > 0`. Thiếu trạng thái để kết luận thì không cho kích hoạt cặp liên quan.
+
+- `ask`: chưa bật thiết bị mới; agent hỏi chọn hoặc đề xuất tắt thiết bị đang chạy trước. Đồng ý bật cả hai không vượt qua quy tắc.
+- `reject`: chặn trạng thái chạy đồng thời.
+- `auto_off_other`: kiểm tra thao tác tắt, tắt thiết bị xung đột trước rồi mới bật thiết bị được yêu cầu. Nếu tắt thất bại thì không bật tiếp. Các thao tác tắt được đưa vào phần xem trước và chính sách xác nhận; tắt thiết bị nhạy cảm vẫn cần xác nhận.
+
+Snapshot trả `device_conflicts` đã lọc theo nhà. Sau kiểm tra tham số cục bộ, agent gọi `validate_plan` nội bộ qua backend: chỉ mô phỏng, không tạo pending action và không thực thi. Kết quả conflict có ID hai thiết bị, policy, trạng thái không rõ và lời giải thích để model chọn câu hỏi tiếp theo. Tool kiểm tra này không được đưa vào danh sách tool cho model tự gọi.
+
+Backend kiểm tra lại toàn bộ kế hoạch trước khi chạy và chặn tại `DeviceStore.apply_action`, kể cả kế hoạch cũ đã được xác nhận, điều khiển trực tiếp và lịch tự động. Kịch bản chạy theo lịch được mô phỏng toàn bộ trước tác động đầu tiên; lịch gặp `ask`/`reject` ghi thất bại thay vì tự đồng ý. Không hỗ trợ chờ trả lời người dùng trong worker lịch.
+
+Giới hạn triển khai: trạng thái thiết bị hiện là mô phỏng trong bộ nhớ, được lưu PostgreSQL. Khóa kiểm tra/ghi bảo vệ các yêu cầu đồng thời trong **một process backend**; không bảo đảm đồng bộ nhiều worker/replica hay trạng thái vật lý ngoài hệ thống. Khi chuyển sang thiết bị thật hoặc nhiều replica, cần nguồn trạng thái dùng chung và xác nhận tắt thực tế trước khi bật thiết bị khác. Không có migration hay biến môi trường mới cho thay đổi này.
+
+## Chính sách xác nhận theo ảnh hưởng
+
+Backend áp dụng `application/action_policy.py` sau khi đã chuẩn bị và kiểm tra toàn bộ kế hoạch. Đèn, quạt, điều hòa, rèm, TV và loa với các action cho phép được thực thi ngay. Khóa cửa, camera, ổ cắm, thiết bị nhiệt/nước nóng, action/loại thiết bị chưa được phân loại và mọi thay đổi kịch bản/lịch vẫn chờ xác nhận. Chạy kịch bản xét từng command đã mở rộng, không chỉ xét tên tool. Trên 3 thiết bị hoặc trên 5 commands cần xác nhận. Chỉ một bước nhạy cảm cũng giữ cả chuỗi chờ; không tự thực hiện phần còn lại.
+
+`turns/commit` mặc định `confirmation_mode=policy`; tùy chọn `always` chỉ tăng mức bảo vệ cho client muốn xác nhận rõ ràng, không có tùy chọn ép bỏ xác nhận. Model không được quyết định chính sách. Không cần biến `.env` hoặc migration mới; kế hoạch chờ trước khi cập nhật vẫn chờ xác nhận.
+
+Kế hoạch chạy ngay được ghi và chuyển `executing` trong cùng transaction với commit lượt hội thoại, rồi dùng executor/preflight/receipt hiện có. Retry chỉ đọc receipt, không nhận lại quyền thực thi. Nếu worker chết sau khi nhận quyền, trạng thái `executing` được giữ để người dùng kiểm tra/phục hồi thủ công; không tự chạy lại tác động chưa biết kết quả. Phản hồi trả `completed_actions` cùng kết quả thật; `pending_actions` chỉ chứa kế hoạch cần nút xác nhận. Chat và Aura hiển thị receipt không kèm nút xác nhận; lỗi giữa chuỗi báo rõ số bước hoàn tất và các bước bỏ qua.
+
+Chế độ `/chat` của các script đánh giá interpreter cũ đã bị chặn trước khi gửi HTTP: chúng còn mong đợi nhãn phân tích cũ và việc không bấm xác nhận không còn đồng nghĩa chỉ đề xuất. `evaluate_agent.py --mode analyze` vẫn chỉ đọc. Bộ đánh giá native mới cần tài khoản/DB test riêng; không dùng corpus điều khiển lên nhà thật chỉ để kiểm tra ngôn ngữ.
+
 ## Giải phóng lease khi access token hết hạn
 
 `turns/begin` trả `cleanup_token` riêng cho AI service, ký bởi backend và ràng buộc user/home/request/lease, thời hạn 10 phút. Token này chỉ dùng ở `POST /api/dashboard/agent/turns/{request_id}/release`, không được dùng như access token, refresh token, commit kế hoạch hoặc quyết định thực thi. Token không được đưa vào phản hồi chat, lịch sử hay state lưu DB. Không cần cấu hình thêm secret hoặc migration.

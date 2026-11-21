@@ -1,5 +1,7 @@
 # Kiến trúc AI HomeMate
 
+Chính sách hiện tại: backend tự thực thi kế hoạch thông thường hợp lệ; thao tác nhạy cảm/phạm vi lớn chờ xác nhận cả chuỗi. `propose_plan` chỉ gửi đề xuất, không được tự quyết định bỏ xác nhận. Backend ghi receipt và quyết định phản hồi; xem [chính sách hiện hành](agent-workflow.md). Những mô tả “mọi thao tác ghi chờ xác nhận” bên dưới là cơ chế cũ.
+
 Chat/Aura hiện dùng vòng lặp tool native tại `agent/tool_agent.py`: LLM nhận hội thoại → chọn tool → nhận kết quả tool → chọn bước tiếp theo hoặc trả lời/hỏi rõ. Không bắt model quản lý các nhãn `relation`/`task_action`. Tool đọc chạy trực tiếp; `propose_plan` kiểm tra cả batch và chuyển backend tạo kế hoạch chờ xác nhận. Model không có tool thực thi ghi. Hội thoại/tool messages được lưu theo phiên PostgreSQL hiện có. Xem mục “Luồng chat hiện tại” trong [agent workflow](agent-workflow.md) cho graph, giới hạn và kiểm chứng; các mô tả interpreter dưới đây còn áp dụng cho observer `/analyze`.
 
 AI service dùng LangGraph để diễn giải câu tự nhiên, làm rõ thông tin thiếu và tạo kế hoạch có kiểm tra. Backend giữ dữ liệu nghiệp vụ, quyền truy cập, hội thoại và quyền thực thi. Xem [agent workflow](agent-workflow.md) cho hợp đồng và xử lý lỗi.

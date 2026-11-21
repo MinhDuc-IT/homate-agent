@@ -9,7 +9,7 @@ HomeMate là ứng dụng quản lý nhà thông minh với giao diện web, bac
 - Quản lý thành viên, kịch bản, lịch một lần/lặp lại và lịch sử thực thi.
 - Báo cáo điện năng theo kỳ, phòng, thiết bị và ngày tham chiếu.
 - Cài đặt, nhật ký thao tác, chính sách xác nhận và giả lập trạng thái phòng.
-- Trợ lý với 18 tools: tra cứu, điều khiển thiết bị, quản lý kịch bản/lịch và tìm tài liệu. Thao tác thay đổi dữ liệu cần người dùng xác nhận.
+- Trợ lý tra cứu, điều khiển thiết bị, quản lý kịch bản/lịch và tìm tài liệu. Backend tự thực hiện thao tác thường; thao tác nhạy cảm hoặc phạm vi lớn cần xác nhận theo [chính sách](docs/agent-workflow.md).
 - RAG service riêng quản lý tài liệu Markdown/TXT, embedding local và retrieval có nguồn cho chat/voice. Dùng cùng PostgreSQL nhưng schema/DB role riêng; nạp tài liệu qua CLI/API, chưa có trang quản lý. Xem [hướng dẫn RAG](docs/rag.md).
 
 Thiết bị hiện hoạt động ở chế độ mô phỏng; điện năng được ước tính từ trạng thái/công suất. Camera dùng dữ liệu minh họa. Kết nối phần cứng chưa triển khai; viewport 3D cần bản Unity WebGL phù hợp.
