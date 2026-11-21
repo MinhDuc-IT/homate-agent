@@ -1,4 +1,4 @@
-"""Evaluate multi-turn interpretation with the configured provider; never approve a plan."""
+"""Legacy multi-turn interpretation evaluator (disabled for native tool-loop chat)."""
 import argparse
 import json
 import os
@@ -59,6 +59,7 @@ def main():
     parser.add_argument('--ai-url', default='http://127.0.0.1:8010')
     parser.add_argument('--backend-url', default='http://127.0.0.1:8000')
     args = parser.parse_args()
+    parser.error('This legacy evaluator expects interpretation labels. Native chat can execute routine actions; migrate the evaluator before running its corpus.')
     token = os.environ.get('HOMATE_ACCESS_TOKEN')
     if not token:
         parser.error('Set HOMATE_ACCESS_TOKEN; never put tokens in reports.')

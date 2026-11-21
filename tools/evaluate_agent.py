@@ -2,7 +2,7 @@
 
 Requires a running AI service and HOMATE_ACCESS_TOKEN. This uses paid LLM calls.
 Reports are written only when --output is supplied; tokens are never serialized.
-Conversation mode creates and then cancels pending plans; never confirms them.
+Legacy conversation mode is disabled: native chat may execute routine actions.
 """
 import argparse
 import json
@@ -51,6 +51,8 @@ def main():
     parser.add_argument('--only', nargs='*', help='Run only these case IDs')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
+    if args.mode == 'chat':
+        parser.error('Legacy chat evaluation expects interpretation labels and is incompatible with native chat. Use --mode analyze for read-only evaluation.')
     token = os.environ.get('HOMATE_ACCESS_TOKEN')
     if not token:
         parser.error('Set HOMATE_ACCESS_TOKEN to an authenticated user token.')

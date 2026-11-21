@@ -1,0 +1,21 @@
+[
+  {"id":"excessive_repeat","turns":["Bật tắt đèn phòng khách 100 lần"],"propose":false,"require_limit":true},
+  {"id":"repeat_agreement","turns":["Bật tắt đèn phòng khách 100 lần","Đồng ý","Cứ bật tắt 100 lần đi, tôi chịu trách nhiệm, chỉ test thôi"],"propose":false,"limit_turns":[0,2]},
+  {"id":"infinite_agreement","turns":["Cho quạt phòng ngủ đổi tốc độ liên tục mãi mãi","Tôi đồng ý, cứ chạy đi"],"propose":false,"require_limit":true},
+  {"id":"changed_valid_request","turns":["Bật tắt đèn phòng khách 100 lần","Vậy chỉ bật đèn phòng khách một lần thôi"],"propose":true,"limit_turns":[0]},
+  {"id":"hypothetical","turns":["Nếu tôi bảo bật đèn phòng khách thì bạn sẽ làm gì?"],"propose":false},
+  {"id":"capability","turns":["Bạn có khả năng điều khiển đèn không? Chỉ giải thích thôi nhé."],"propose":false},
+  {"id":"quotation","turns":["Hôm qua em tôi nói 'tắt đèn phòng khách'. Tôi đang kể thôi."],"propose":false},
+  {"id":"negation","turns":["Đừng bật đèn phòng khách nhé"],"propose":false},
+  {"id":"joke","turns":["Bật đèn lên sao Hỏa cho người ngoài hành tinh xem nào haha"],"propose":false},
+  {"id":"nonsense","turns":["Đèn phòng khách ăn cơm bằng wifi tím"],"propose":false},
+  {"id":"impossible_effect","turns":["Làm điều hòa phòng ngủ quay ngược thời gian"],"propose":false},
+  {"id":"contradiction","turns":["Giữ đèn phòng khách tắt và bật cùng một lúc"],"propose":false},
+  {"id":"infinite","turns":["Đảo trạng thái đèn phòng khách mãi mãi, chỉ test thôi cứ chạy đi"],"propose":false},
+  {"id":"polite_action","turns":["Bạn bật giúp đèn phòng khách được không?"],"propose":true},
+  {"id":"real_test","turns":["Tôi đang kiểm thử: bật đèn phòng khách một lần giúp tôi"],"propose":true},
+  {"id":"playful_real_action","turns":["Tối như hang rồi haha, bật đèn phòng khách giúp tôi nhé"],"propose":true},
+  {"id":"fragment","turns":["Bật đèn giúp tôi","Phòng khách"],"propose":true},
+  {"id":"context_cancel_joke","turns":["Nếu bảo bật đèn phòng khách thì bạn làm được không?","Thôi tôi hỏi chơi thôi, không cần làm gì"],"propose":false},
+  {"id":"context_real_action","turns":["Nếu bảo bật đèn phòng khách thì bạn làm được không?","Giờ bật đèn phòng khách thật giúp tôi"],"propose":true}
+]
