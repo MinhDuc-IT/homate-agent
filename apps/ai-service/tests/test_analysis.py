@@ -49,6 +49,8 @@ class Backend:
     async def call(self, token, request_id, name, arguments):
         assert token == 'valid'
         self.calls.append((name, arguments))
+        if name == 'validate_plan':
+            return {'valid': True, 'issues': []}
         assert name in {'get_home_snapshot', 'list_schedules', 'get_schedule'}
         if name == 'get_home_snapshot':
             return deepcopy(SNAPSHOT)

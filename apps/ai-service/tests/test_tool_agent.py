@@ -26,6 +26,20 @@ def test_tool_loop_observes_results_then_answers_without_interpretation_labels()
     assert not workflow.commits[-1]['steps']
 
 
+def test_backend_conflict_is_returned_to_model_without_staging():
+    class ConflictingBackend(Backend):
+        async def call(self, token, request_id, name, arguments):
+            if name == 'validate_plan':
+                return {'valid': False, 'issues': [{'code': 'device_conflict', 'policy': 'ask',
+                    'device_id': 'ac-bed', 'conflicts_with': 'heater', 'message': 'Bạn muốn dùng thiết bị nào?'}]}
+            return await super().call(token, request_id, name, arguments)
+    model = Model([plan(), ModelReply('Máy sưởi đang bật. Bạn muốn chuyển sang điều hòa không?')])
+    workflow = Workflow()
+    result = chat(ToolConversationAgent(model, ConflictingBackend(), workflow), 'Bật điều hòa')
+    assert not workflow.commits[-1]['steps'] and not result['pending_actions']
+    assert 'device_conflict' in model.messages[-1][-1]['content']
+
+
 def test_fragment_and_read_followup_use_saved_tool_transcript_after_reload():
     workflow = Workflow()
     first_agent = ToolConversationAgent(Model([call('get_home_snapshot'), ModelReply('Bạn muốn xem phòng nào?')]), Backend(), workflow)
