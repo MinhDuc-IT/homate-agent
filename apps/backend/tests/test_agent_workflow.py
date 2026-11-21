@@ -22,7 +22,7 @@ def commit(client, admin, identifier, steps=None, state=None, invalidate=True):
     return client.post(BASE + f'/turns/{identifier}/commit', headers=admin, json={
         'state': state or {}, 'response': {'reply': 'Review plan', '_user_text': 'Test', 'sources': [], 'trace': []},
         'invalidate': invalidate, 'steps': steps or [], 'summary': 'Test plan',
-        'lease_id': client.app.state.test_leases[identifier]})
+        'lease_id': client.app.state.test_leases[identifier], 'confirmation_mode': 'always'})
 
 
 def abort(client, admin, identifier):
@@ -319,9 +319,10 @@ def test_ai_http_workflow_persists_clarification_then_confirms_one_version(clien
             response = ai.post('/api/ai/chat', headers=admin, json=payload)
             assert response.status_code == 200, response.text
             second = response.json()
-            assert second['dialogue_state'] == 'pending' and model.calls == 4
+            assert second['dialogue_state'] == 'idle' and model.calls == 4
+            assert not second['pending_actions']
             assert ai.post('/api/ai/chat', headers=admin, json=payload).json() == second
-            action = second['pending_actions'][0]
+            action = second['completed_actions'][0]
             receipt = decide(client, admin, action)
             assert receipt.json()['status'] == 'executed'
             saved = client.get(BASE + '/conversations/' + second['conversation_id'], headers=admin).json()

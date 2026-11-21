@@ -15,7 +15,7 @@ READ_TOOLS = frozenset({'get_home_snapshot', 'get_energy_report', 'list_scenes',
 
 class WorkflowRepository(Protocol):
     def begin(self, user, request_id, input_hash, session_id=None, expected_version=None): ...
-    def commit(self, user, request_id, state, response, invalidate, steps, summary, ttl, lease_id): ...
+    def commit(self, user, request_id, state, response, invalidate, steps, summary, ttl, lease_id, auto_execute=False): ...
     def abort(self, user, request_id, lease_id): ...
     def fetch(self, user, session_id): ...
     def get_plan(self, user, plan_id): ...
@@ -35,6 +35,10 @@ class AgentWorkflowService:
         plan = self.repository.claim(user, plan_id, version, approved)
         if not plan.pop('claimed', False):
             return plan
+        return self.execute_claimed(plan, preflight, execute)
+
+    def execute_claimed(self, plan, preflight, execute):
+        plan_id = plan['id']
         try:
             # Validate the complete sequence before the first side effect.
             preflight(plan['steps'])

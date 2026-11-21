@@ -2,6 +2,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from homate.modules.home.domain.actions import action_writes
 from homate.modules.home.application.devices import DeviceStore
+from homate.modules.home.domain.conflicts import active
 
 
 class DeviceCommand(BaseModel):
@@ -70,17 +71,32 @@ def prepare(household, store, schedules, user, tool, args):
         scene = None
         summary = f"{store.get(commands[0]['device_id']).name}: {ACTION_LABELS.get(commands[0]['action'], commands[0]['action'])}"
     room_ids = {room['id'] for room in household.load_rooms_ambient(user['home_id'])}
-    sandbox = DeviceStore(store.list())
+    sandbox = store.fork()
     writes = []
+    shutdowns, desired = [], {}
     for command in commands:
         device = sandbox.get(command['device_id'])
         if device.room not in room_ids: raise PermissionError('Thiết bị không thuộc nhà của bạn')
         for key, value in action_writes(device, command['action'], command['parameters']):
+            before = {d.id: d.state for d in sandbox.list()}
             sandbox.apply_action(device.id, key, value)
+            for peer in sandbox.list():
+                if peer.id != device.id:
+                    for peer_key, peer_value in peer.state.items():
+                        if before[peer.id].get(peer_key) != peer_value:
+                            writes.append({'device_id': peer.id, 'key': peer_key, 'value': peer_value})
+                            shutdowns.append({'device_id': peer.id, 'action': 'turn_off', 'parameters': {}})
             writes.append({'device_id': device.id, 'key': key, 'value': value})
+        desired[device.id] = active(sandbox.get(device.id))
+    if any(value is True and active(sandbox.get(identifier)) is not True for identifier, value in desired.items()):
+        raise ValueError('Kịch bản yêu cầu giữ các thiết bị xung đột cùng bật. Hãy chọn thiết bị muốn dùng.')
     review = [f"{store.get(command['device_id']).name}: {ACTION_LABELS.get(command['action'], command['action'])}" +
               (f" ({', '.join(str(value) for value in command['parameters'].values())})" if command['parameters'] else '') for command in commands]
-    return {'commands': commands, 'writes': writes, 'scene': scene, 'review': review}, summary
+    if shutdowns:
+        names = list(dict.fromkeys(store.get(c['device_id']).name for c in shutdowns))
+        summary += ' (tắt trước: ' + ', '.join(names) + ')'
+        review = ['Tắt trước: ' + ', '.join(names)] + review
+    return {'commands': commands, 'writes': writes, 'scene': scene, 'review': review, 'automatic_shutdowns': shutdowns}, summary
 
 
 def execute(household, store, schedules, user, changed, tool, args):
@@ -108,9 +124,11 @@ def execute(household, store, schedules, user, changed, tool, args):
             current = household.get_scene(user['home_id'], args['scene']['id'])
             if current != args['scene']: raise ValueError('Kịch bản đã thay đổi; hãy gửi yêu cầu mới')
         # Revalidate every command before performing any device write.
-        for command in args['commands']: prepare(household, store, schedules, user, 'control_device', command)
+        prepare(household, store, schedules, user, tool, {'scene_id': args['scene']['id']} if args['scene'] else args['commands'][0])
         for write in args['writes']:
-            changed.append(store.apply_action(write['device_id'], write['key'], write['value']).device)
+            result = store.apply_action(write['device_id'], write['key'], write['value'])
+            changed.extend(result.related_devices)
+            changed.append(result.device)
         result = {'device_ids': list(dict.fromkeys(d.id for d in changed))}
     household.append_command_log(user['home_id'], utterance=f'Agent: {tool}', intent=tool, result='success', user_id=user['id'])
     return result

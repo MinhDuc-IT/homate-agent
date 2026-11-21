@@ -98,7 +98,40 @@ class PostgresWorkflowRepository:
                 (request_id, lease, now() + timedelta(minutes=5), session_id))
             return {'cached': False, 'session': session, 'lease_id': lease}
 
-    def commit(self, user, request_id, state, response, invalidate, steps, summary, ttl, lease_id):
+    def cached_turn(self, user, request_id):
+        with connect(self.url) as conn:
+            row = conn.execute("SELECT * FROM agent_turns WHERE user_id=%s AND request_id=%s AND status='completed'",
+                               (user['id'], request_id)).fetchone()
+            if not row:
+                return None
+            turn = decoded(row)
+            self._session(conn, user, turn['session_id'])
+            return turn['response']
+
+    def cache_auto_result(self, user, request_id, result):
+        with connect(self.url) as conn:
+            turn = decoded(conn.execute('SELECT * FROM agent_turns WHERE user_id=%s AND request_id=%s FOR UPDATE',
+                                        (user['id'], request_id)).fetchone())
+            session = self._session(conn, user, turn['session_id'], True)
+            if turn['response'].get('auto_plan_id') != result.get('auto_plan_id'):
+                raise WorkflowConflict('Kết quả không thuộc lượt xử lý')
+            conn.execute('UPDATE agent_turns SET response=%s WHERE user_id=%s AND request_id=%s',
+                         (Jsonb(result), user['id'], request_id))
+            if (session['version'] == result['conversation_version'] and not session['busy_request']
+                    and session['status'] != 'executing'):
+                # Keep the next model turn consistent with the real receipt,
+                # rather than the placeholder used before execution started.
+                state, messages = session['state'], session['messages']
+                transcript = state.get('conversation', {}).get('tool_transcript', [])
+                if transcript and transcript[-1].get('role') == 'assistant':
+                    transcript[-1]['content'] = result['reply']
+                if messages and messages[-1].get('role') == 'assistant':
+                    messages[-1]['content'] = result['reply']
+                conn.execute('UPDATE agent_sessions SET state=%s,messages=%s WHERE id=%s',
+                             (Jsonb(state), Jsonb(messages), session['id']))
+        return result
+
+    def commit(self, user, request_id, state, response, invalidate, steps, summary, ttl, lease_id, auto_execute=False):
         with connect(self.url) as conn:
             turn = decoded(conn.execute('SELECT * FROM agent_turns WHERE user_id=%s AND request_id=%s', (user['id'], request_id)).fetchone())
             session = self._session(conn, user, turn['session_id'], True)
@@ -123,9 +156,16 @@ class PostgresWorkflowRepository:
                     conn.execute('''INSERT INTO agent_plan_steps(plan_id,ordinal,tool,arguments,prepared,summary,depends_on)
                         VALUES(%s,%s,%s,%s,%s,%s,%s)''', (identifier, index, step['tool'], Jsonb(step['arguments']),
                         Jsonb(step['prepared']), step['summary'], Jsonb(step.get('depends_on', []))))
+            claimed_plan = None
+            if steps and auto_execute:
+                # Reserve execution in the SAME transaction as turn commit.
+                # A crash/retry may inspect the receipt, never claim it twice.
+                conn.execute("UPDATE agent_plans SET status='executing' WHERE id=%s", (identifier,))
+                claimed_plan = self._plan(conn, identifier, internal=True)
+                response['auto_plan_id'] = identifier
             active = conn.execute("SELECT id FROM agent_plans WHERE session_id=%s AND status='pending' ORDER BY version DESC LIMIT 1", (session['id'],)).fetchone()
             actions = [self._plan(conn, active['id'])] if active else []
-            status = 'pending' if actions else ('clarifying' if state.get('draft') else 'idle')
+            status = 'executing' if claimed_plan else 'pending' if actions else ('clarifying' if state.get('draft') else 'idle')
             result = {**response, 'pending_actions': actions, 'conversation_id': session['id'],
                       'conversation_version': version, 'dialogue_state': status,
                       'invalidated_plan_ids': invalidated, 'invalidated_status': invalidated_status}
@@ -137,7 +177,7 @@ class PostgresWorkflowRepository:
                 busy_request=NULL,busy_lease=NULL,busy_until=NULL,expires_at=%s,updated_at=now() WHERE id=%s''',
                 (version, plan_version, status, Jsonb(saved_state), Jsonb(messages), now() + timedelta(minutes=30), session['id']))
             conn.execute("UPDATE agent_turns SET status='completed',response=%s WHERE user_id=%s AND request_id=%s", (Jsonb(result), user['id'], request_id))
-            return result
+            return {**result, '_claimed_plan': claimed_plan} if claimed_plan else result
 
     def abort(self, user, request_id, lease_id):
         with connect(self.url) as conn:

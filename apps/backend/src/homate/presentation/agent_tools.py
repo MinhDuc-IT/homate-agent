@@ -24,7 +24,7 @@ class ToolRequest(BaseModel):
     request_id: UUID
     tool: Literal['get_home_snapshot','get_energy_report','control_device','execute_scene','create_schedule',
         'list_scenes','get_scene','create_scene','update_scene','delete_scene','set_scene_enabled',
-        'list_schedules','get_schedule','update_schedule','delete_schedule','set_schedule_enabled','get_schedule_runs']
+        'list_schedules','get_schedule','update_schedule','delete_schedule','set_schedule_enabled','get_schedule_runs','validate_plan']
     arguments: dict = Field(default_factory=dict)
 
 
@@ -99,10 +99,20 @@ async def call_tool(body: ToolRequest, request: Request, user=Depends(get_curren
     household = request.app.state.household_service
     if body.tool == 'get_home_snapshot':
         if body.arguments: raise HTTPException(400, 'Tool này không nhận tham số')
-        rooms = household.load_rooms_ambient(user['home_id'])
-        room_ids = {room['id'] for room in rooms}
-        return {'rooms': rooms, 'devices': [d.model_dump(mode='json') for d in request.app.state.device_store.list() if d.room in room_ids], 'scenes': household.list_scenes(user['home_id'])}
+        from homate.presentation.agent_workflow import read_step
+        return read_step(request.app, user, body.tool, {})
     try:
+        if body.tool == 'validate_plan':
+            from homate.presentation.agent_workflow import PlanStep, prepare_steps
+            from homate.modules.home.domain.conflicts import DeviceConflictError
+            if set(body.arguments) != {'steps'} or not isinstance(body.arguments['steps'], list) or not 1 <= len(body.arguments['steps']) <= 48:
+                raise ValueError('Cần kế hoạch từ 1 đến 48 bước')
+            steps = [PlanStep.model_validate(s).model_dump() for s in body.arguments['steps']]
+            try:
+                prepared = prepare_steps(request.app, user, steps)
+                return {'valid': True, 'issues': [], 'review': [s['prepared'].get('review', []) for s in prepared]}
+            except DeviceConflictError as error:
+                return {'valid': False, 'issues': error.issues}
         arguments = validated_arguments(body.tool, body.arguments)
         if body.tool == 'get_energy_report':
             query = EnergyQuery.model_validate(arguments)
