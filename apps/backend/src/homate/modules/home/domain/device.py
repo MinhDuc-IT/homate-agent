@@ -136,6 +136,7 @@ class DeviceActionRequest(BaseModel):
 
 class DeviceActionResponse(BaseModel):
     device: Device
+    related_devices: list[Device] = Field(default_factory=list)
     changed_key: str
     previous_value: DeviceStateValue | None = None
     new_value: DeviceStateValue | None = None

@@ -120,9 +120,12 @@ class ScheduleService:
     def _apply_action(self, device_id: str, action: str, parameters: dict[str, Any]) -> dict[str, Any]:
         if self.store is None:
             raise RuntimeError('Device store is unavailable')
+        self.store.validate_commands([{'device_id': device_id, 'action': action, 'parameters': parameters}])
+        related = []
         for key, value in action_writes(self.store.get(device_id), action, parameters):
             result = self.store.apply_action(device_id, key, value)
-        return {'device_id': device_id, 'action': action, 'state': result.device.state}
+            related.extend({'device_id': d.id, 'state': d.state} for d in result.related_devices)
+        return {'device_id': device_id, 'action': action, 'state': result.device.state, 'related_devices': related}
 
     def execute_due(self, now: datetime | None=None) -> int:
         now = now or _now()
@@ -149,6 +152,7 @@ class ScheduleService:
                     scene = get_scene(self.db_path, row['home_id'], row['scene_id'])
                     if not scene['is_enabled']:
                         raise ValueError('Kịch bản đã bị tắt')
+                    self.store.validate_commands(scene['steps'])
                     result = [self._apply_action(step['device_id'], step['action'], step['parameters']) for step in scene['steps']]
                 else:
                     result = self._apply_action(row['device_id'], row['action'], json.loads(row['parameters'] or '{}'))
@@ -177,6 +181,8 @@ async def schedule_worker(service: ScheduleService, ws_manager=None, interval_se
             for event in service.drain_execution_events():
                 if ws_manager is not None:
                     for device in event.get('devices', []):
+                        for peer in device.get('related_devices', []):
+                            await ws_manager.broadcast_json({'type': 'device.updated', 'device_id': peer['device_id'], 'state': peer['state'], 'ts': event['finished_at']})
                         await ws_manager.broadcast_json({'type': 'device.updated', 'device_id': device['device_id'], 'state': device['state'], 'ts': event['finished_at']})
                     await ws_manager.broadcast_json(event)
         except Exception:

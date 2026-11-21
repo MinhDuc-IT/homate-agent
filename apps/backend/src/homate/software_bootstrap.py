@@ -44,7 +44,8 @@ def create_app(database_url=None, *, start_workers=True):
             try: meter.record(device)
             except Exception: logging.getLogger(__name__).exception("Energy sample failed after state was saved")
 
-        store = DeviceStore(household.load_devices(database_url), on_change=persist)
+        store = DeviceStore(household.load_devices(database_url), on_change=persist,
+            conflict_rules=lambda: household.load_device_conflicts(database_url))
         manager = ConnectionManager()
         scheduler = ScheduleService(PostgresSchedules(database_url, store), service, store)
         app.state.household_service = service

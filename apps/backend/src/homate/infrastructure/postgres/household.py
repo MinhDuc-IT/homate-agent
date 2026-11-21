@@ -257,8 +257,6 @@ def load_device_conflicts(path: str) -> dict[str, list[dict[str, str]]]:
                 FROM device_conflicts
                 ORDER BY device_id, conflicts_with
                 """).fetchall()
-        except psycopg.ProgrammingError:
-            return {}
         finally:
             conn.close()
     out: dict[str, list[dict[str, str]]] = {}
@@ -409,54 +407,25 @@ def _keyword_taken(conn: psycopg.Connection, home_id: str, keyword: str, *, excl
             WHERE home_id = %s AND lower(voice_keyword) = lower(%s) AND id != %s
             """, (home_id, keyword, exclude_id)).fetchone()
     return row is not None
-_ACTIVATING_ACTIONS = frozenset({'turn_on', 'set_temperature', 'set_brightness', 'set_volume', 'set_speed', 'set_mode', 'set_fan', 'open', 'unlock', 'start_recording'})
-
-def _is_activating_step(action: str, parameters: dict[str, Any] | None) -> bool:
-    if action not in _ACTIVATING_ACTIONS:
-        return False
-    if action == 'set_speed':
-        speed = (parameters or {}).get('speed')
-        return isinstance(speed, (int, float)) and speed > 0
-    return True
-
-def _scope_applies(scope: str, room_a: str, room_b: str) -> bool:
-    if scope in {'explicit', 'same_home'}:
-        return True
-    return room_a == room_b
-
 def _validate_scene_step_conflicts(conn: psycopg.Connection, home_id: str, steps: list[dict[str, Any]]) -> None:
-    """Reject scene steps that activate both sides of a declared device conflict pair."""
-    activating: list[tuple[str, str, dict[str, Any]]] = []
-    for step in steps:
-        device_id = str(step['device_id']).strip()
-        action = str(step.get('action') or '').strip()
-        params = step.get('parameters') if isinstance(step.get('parameters'), dict) else {}
-        if not device_id or not _is_activating_step(action, params):
-            continue
-        activating.append((device_id, action, params))
-    if len(activating) < 2:
-        return
-    device_ids = {device_id for device_id, _, _ in activating}
-    placeholders = ','.join(('%s' for _ in device_ids))
-    rows = conn.execute(f'\n        SELECT id, name, room_id FROM devices\n        WHERE home_id = %s AND id IN ({placeholders})\n        ', (home_id, *device_ids)).fetchall()
-    devices = {row['id']: row for row in rows}
-    try:
-        conflict_rows = conn.execute(f'\n            SELECT device_id, conflicts_with, scope\n            FROM device_conflicts\n            WHERE device_id IN ({placeholders})\n            ', tuple(device_ids)).fetchall()
-    except psycopg.ProgrammingError:
-        return
-    active_ids = {device_id for device_id, _, _ in activating}
-    for row in conflict_rows:
-        left_id = row['device_id']
-        right_id = row['conflicts_with']
-        if left_id not in active_ids or right_id not in active_ids:
-            continue
-        left = devices.get(left_id)
-        right = devices.get(right_id)
-        if left is None or right is None:
-            continue
-        if not _scope_applies(row['scope'], left['room_id'], right['room_id']):
-            continue
-        raise ValueError(f"Không thể bật {left['name'].lower()} và {right['name'].lower()} cùng lúc trong một kịch bản.")
+    """Check configuration order; live state is checked again at execution time."""
+    from homate.modules.home.application.devices import DeviceStore
+    rows = conn.execute('SELECT id, name, room_id, kind, state, capabilities FROM devices WHERE home_id=%s', (home_id,)).fetchall()
+    devices = [Device.model_validate({'id': row['id'], 'name': row['name'], 'room': row['room_id'],
+        'kind': row['kind'], 'state': json.loads(row['state']), 'controls': json.loads(row['capabilities'])}) for row in rows]
+    ids = {d.id for d in devices}
+    rules = {}
+    for row in conn.execute('SELECT device_id, conflicts_with, scope, on_conflict FROM device_conflicts').fetchall():
+        if row['device_id'] in ids and row['conflicts_with'] in ids:
+            rules.setdefault(row['device_id'], []).append({'device_id': row['conflicts_with'],
+                'scope': row['scope'], 'on_conflict': row['on_conflict']})
+    # Saving a reusable scene must not depend on which devices happen to be on.
+    for device in devices:
+        if 'power' in device.state:
+            device.state['power'] = False
+        elif device.kind == 'fan':
+            device.state['speed'] = 0
+    DeviceStore(devices, conflict_rules=lambda: rules).validate_commands(steps)
 
 def _replace_steps(conn: psycopg.Connection, home_id: str, scene_id: str, steps: list[dict[str, Any]]) -> None:
     _validate_scene_step_conflicts(conn, home_id, steps)

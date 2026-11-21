@@ -1,5 +1,6 @@
 from __future__ import annotations
 import threading
+from homate.modules.home.domain.conflicts import DeviceConflictError, conflicts_for, off_control
 from collections.abc import Callable
 from homate.modules.home.domain.defaults import default_devices, mvp_devices
 from homate.modules.home.domain.device import (
@@ -43,6 +44,7 @@ class DeviceStore:
         self,
         devices: list[Device] | None = None,
         on_change: OnChangeCallback | None = None,
+        conflict_rules: Callable[[], dict] | None = None,
     ) -> None:
         source = devices if devices is not None else default_devices()
         self._devices: dict[str, Device] = {
@@ -50,6 +52,28 @@ class DeviceStore:
         }
         self._on_change = on_change
         self._lock = threading.RLock()
+        self._conflict_rules = conflict_rules
+
+    def conflict_rules(self):
+        return self._conflict_rules() if self._conflict_rules else {}
+
+    def fork(self):
+        """A side-effect-free simulation with the same declared rules."""
+        rules = self.conflict_rules()
+        return DeviceStore(self.list(), conflict_rules=lambda: rules)
+
+    def validate_commands(self, commands):
+        """Validate ordered effects without changing live state."""
+        from homate.modules.home.domain.actions import action_writes
+        from homate.modules.home.domain.conflicts import active
+        sandbox, desired = self.fork(), {}
+        for command in commands:
+            identifier = command['device_id']
+            for key, value in action_writes(sandbox.get(identifier), command['action'], command.get('parameters') or {}):
+                sandbox.apply_action(identifier, key, value)
+            desired[identifier] = active(sandbox.get(identifier))
+        if any(value is True and active(sandbox.get(identifier)) is not True for identifier, value in desired.items()):
+            raise ValueError('Kịch bản yêu cầu giữ các thiết bị xung đột cùng bật. Hãy chọn thiết bị muốn dùng.')
 
     def set_on_change(self, callback: OnChangeCallback | None) -> None:
         with self._lock:
@@ -123,6 +147,18 @@ class DeviceStore:
                 changed_key = key
 
             self._synchronize_position_state(device, {changed_key})
+            issues = conflicts_for(device, self._devices, self.conflict_rules())
+            blocked = [i for i in issues if i['policy'] != 'auto_off_other' or i['unknown_state']]
+            if blocked:
+                raise DeviceConflictError(blocked)
+            # Validate every automatic shutdown before making the first change.
+            shutdowns = [(i['conflicts_with'], off_control(self._devices[i['conflicts_with']])) for i in issues]
+            sandbox = DeviceStore(list(self._devices.values()))
+            for identifier, (off_key, off_value) in shutdowns:
+                sandbox.apply_action(identifier, off_key, off_value)
+            related = []
+            for identifier, (off_key, off_value) in shutdowns:
+                related.append(self.apply_action(identifier, off_key, off_value).device)
             snapshot = device.model_copy(deep=True)
             # Publish the new state only after the persistence callback succeeds.
             if self._on_change is not None:
@@ -131,6 +167,7 @@ class DeviceStore:
 
         return DeviceActionResponse(
             device=snapshot,
+            related_devices=related,
             changed_key=changed_key,
             previous_value=previous,
             new_value=new_value,

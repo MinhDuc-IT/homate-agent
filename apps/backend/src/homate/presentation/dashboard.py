@@ -38,6 +38,8 @@ async def action(identifier: str, body: DeviceActionRequest, store=Depends(get_d
     except DeviceNotFoundError as error: raise HTTPException(404, str(error)) from error
     except InvalidDeviceActionError as error: raise HTTPException(400, str(error)) from error
     await notify_device_updated(manager, result.device)
+    for peer in result.related_devices:
+        await notify_device_updated(manager, peer)
     service.append_command_log(user['home_id'], utterance=f"{result.device.name}: {body.key} → {result.new_value}", intent="manual_control", result="success", user_id=user['id'], actions=[{"device_id": identifier, "action": body.key, "parameters": {"value": result.new_value}}])
     return result
 
