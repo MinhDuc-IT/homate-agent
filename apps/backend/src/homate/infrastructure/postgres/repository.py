@@ -5,6 +5,7 @@ from homate.infrastructure.postgres import household
 class PostgresHouseholdRepository:
     def __init__(self, database_url): self.database_url = database_url
     def load_home(self): return household.load_home(self.database_url)
+    def load_simulation_catalog(self, home_id): return household.load_simulation_catalog(self.database_url, home_id)
     def load_devices(self): return household.load_devices(self.database_url)
     def get_user(self, user_id): return household.get_user(self.database_url, user_id)
     def list_users(self, home_id): return household.list_users(self.database_url, home_id)

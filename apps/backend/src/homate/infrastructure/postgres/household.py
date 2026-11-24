@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from homate.modules.home.domain.defaults import default_devices
+from homate.modules.home.domain.simulation_catalog import BINDINGS, ROOMS, SCENE_ID
 from homate.infrastructure.postgres.connection import connect
 from homate.modules.identity.domain.security import hash_pin, verify_pin
 from homate.modules.home.domain.device import Device
@@ -21,7 +22,7 @@ HOME_ID = 'home-michelin-bois'
 DEFAULT_PIN = '1234'
 _LOCK = threading.RLock()
 KIND_TO_TYPE: dict[str, str] = {'bulb': 'light', 'snowflake': 'ac', 'flame': 'heater', 'lock': 'lock', 'curtain': 'curtain', 'speaker': 'speaker', 'tv': 'tv', 'fan': 'fan', 'plug': 'plug', 'camera': 'camera', 'droplet': 'water_heater'}
-EXTRA_ALIASES: dict[str, list[str]] = {'light-living': ['đèn phòng khách', 'den phong khach'], 'ac-living': ['điều hòa phòng khách', 'máy lạnh phòng khách'], 'speaker-living': ['loa phòng khách', 'loa'], 'curtain': ['rèm', 'rèm cửa', 'rèm phòng ngủ', 'kéo rèm'], 'door': ['cửa', 'cửa chính', 'khóa cửa', 'đóng khóa', 'mở khóa'], 'light-bed': ['đèn phòng ngủ'], 'ac-bed': ['điều hòa phòng ngủ'], 'heater-living': ['lò sưởi', 'máy sưởi', 'lò sưởi phòng khách', 'máy sưởi phòng khách']}
+EXTRA_ALIASES: dict[str, list[str]] = {'light-living': ['đèn phòng khách 1', 'den phong khach 1'], 'ac-living': ['điều hòa phòng khách', 'máy lạnh phòng khách'], 'speaker-living': ['loa phòng khách', 'loa'], 'curtain': ['rèm cửa sổ phòng ngủ'], 'door': ['cửa', 'cửa chính', 'khóa cửa', 'đóng khóa', 'mở khóa'], 'light-bed': ['đèn phòng ngủ 1'], 'ac-bed': ['điều hòa phòng ngủ'], 'heater-living': ['lò sưởi', 'máy sưởi', 'lò sưởi phòng khách', 'máy sưởi phòng khách']}
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -206,6 +207,7 @@ def init_and_seed(path: str) -> None:
             if existing:
                 added = _insert_missing_devices(conn)
                 conflicts_added = _insert_missing_conflicts(conn)
+                _ensure_simulation_bindings(conn)
                 _ensure_energy_defaults(conn)
                 conn.commit()
                 if added or conflicts_added:
@@ -214,6 +216,7 @@ def init_and_seed(path: str) -> None:
                     logger.info('[POSTGRES] already seeded (%s home rows)', existing)
                 return
             _seed(conn)
+            _ensure_simulation_bindings(conn)
             _ensure_energy_defaults(conn)
             conn.commit()
             logger.info('[POSTGRES] seeded Michelin Bois')
@@ -513,7 +516,7 @@ def persist_device_state(path: str, device: Device) -> None:
 def _seed(conn: psycopg.Connection) -> None:
     now = _now()
     conn.execute('INSERT INTO homes (id, name, timezone, created_at) VALUES (%s, %s, %s, %s)', (HOME_ID, 'Michelin Bois', 'Asia/Ho_Chi_Minh', now))
-    rooms = [('living', 'Phòng khách', 1), ('bed', 'Phòng ngủ', 2), ('kitchen', 'Bếp', 3), ('bath', 'Phòng tắm', 4), ('office', 'Phòng làm việc', 5), ('balcony', 'Ban công', 6)]
+    rooms = ROOMS
     for room_id, label, order in rooms:
         conn.execute('INSERT INTO rooms (id, home_id, label, sort_order) VALUES (%s, %s, %s, %s)', (room_id, HOME_ID, label, order))
     pin = hash_pin(DEFAULT_PIN)
@@ -533,7 +536,8 @@ def _seed(conn: psycopg.Connection) -> None:
 def _seed_conflicts(conn: psycopg.Connection) -> None:
     """Idempotent symmetric climate pairs (same room)."""
     device_ids = {row['id'] for row in conn.execute('SELECT id FROM devices')}
-    pairs = [('ac-living', 'heater-living', 'same_room', 'ask')]
+    pairs = [('ac-living', 'heater-living', 'same_room', 'ask'),
+             ('ac-office', 'heater-living', 'same_room', 'ask')]
     for left, right, scope, on_conflict in pairs:
         if left not in device_ids or right not in device_ids:
             continue
@@ -559,6 +563,23 @@ def _insert_missing_devices(conn: psycopg.Connection) -> int:
         _insert_device(conn, device, now)
         added += 1
     return added
+
+
+def _ensure_simulation_bindings(conn: psycopg.Connection) -> None:
+    for identifier, object_name, source_ref, kind in BINDINGS:
+        conn.execute('''INSERT INTO device_simulation_bindings
+            (device_id, home_id, scene_id, object_name, source_ref, binding_kind)
+            SELECT id, home_id, %s, %s, %s, %s FROM devices WHERE id=%s AND home_id=%s
+            ON CONFLICT DO NOTHING''', (SCENE_ID, object_name, source_ref, kind, identifier, HOME_ID))
+
+
+def load_simulation_catalog(path: str, home_id: str) -> list[dict[str, Any]]:
+    with connect(path) as conn:
+        return conn.execute('''SELECT d.id AS device_id, d.name, d.room_id,
+            b.scene_id, b.object_name, b.source_ref, b.binding_kind,
+            CASE WHEN b.device_id IS NULL THEN 'unmapped' ELSE 'mapped' END AS model_status
+            FROM devices d LEFT JOIN device_simulation_bindings b ON b.device_id=d.id AND b.home_id=d.home_id
+            WHERE d.home_id=%s ORDER BY d.room_id, d.id''', (home_id,)).fetchall()
 
 def _insert_device(conn: psycopg.Connection, device: Device, now: str) -> None:
     device_type = KIND_TO_TYPE.get(device.kind, device.kind)

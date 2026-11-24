@@ -1,0 +1,1310 @@
+{
+  "home_id": "home-michelin-bois",
+  "scene_id": "casa",
+  "rooms": [
+    [
+      "living",
+      "Phòng khách",
+      1
+    ],
+    [
+      "bed",
+      "Phòng ngủ",
+      2
+    ],
+    [
+      "kitchen",
+      "Bếp",
+      3
+    ],
+    [
+      "bath",
+      "Phòng tắm",
+      4
+    ]
+  ],
+  "legacy_devices": [
+    {
+      "id": "light-living",
+      "name": "Đèn phòng khách",
+      "room": "living"
+    },
+    {
+      "id": "ac-living",
+      "name": "Điều hòa phòng khách",
+      "room": "living"
+    },
+    {
+      "id": "tv-living",
+      "name": "TV phòng khách",
+      "room": "living"
+    },
+    {
+      "id": "speaker-living",
+      "name": "Loa phòng khách",
+      "room": "living"
+    },
+    {
+      "id": "heater-living",
+      "name": "Máy sưởi phòng khách",
+      "room": "living"
+    },
+    {
+      "id": "door",
+      "name": "Cửa chính",
+      "room": "living"
+    },
+    {
+      "id": "cam-entrance",
+      "name": "Camera cửa",
+      "room": "living"
+    },
+    {
+      "id": "light-bed",
+      "name": "Đèn phòng ngủ",
+      "room": "bed"
+    },
+    {
+      "id": "ac-bed",
+      "name": "Điều hòa phòng ngủ",
+      "room": "bed"
+    },
+    {
+      "id": "curtain",
+      "name": "Rèm phòng ngủ",
+      "room": "bed"
+    },
+    {
+      "id": "fan-bed",
+      "name": "Quạt trần phòng ngủ",
+      "room": "bed"
+    },
+    {
+      "id": "light-kitchen",
+      "name": "Đèn bếp",
+      "room": "kitchen"
+    },
+    {
+      "id": "plug-kitchen",
+      "name": "Ổ nồi cơm",
+      "room": "kitchen"
+    },
+    {
+      "id": "fan-kitchen",
+      "name": "Quạt hút bếp",
+      "room": "kitchen"
+    },
+    {
+      "id": "light-bath",
+      "name": "Đèn phòng tắm",
+      "room": "bath"
+    },
+    {
+      "id": "heater-bath",
+      "name": "Máy nước nóng",
+      "room": "bath"
+    },
+    {
+      "id": "fan-bath",
+      "name": "Quạt thông gió",
+      "room": "bath"
+    },
+    {
+      "id": "light-office",
+      "name": "Đèn bàn làm việc",
+      "room": "office"
+    },
+    {
+      "id": "ac-office",
+      "name": "Điều hòa phòng làm việc",
+      "room": "office"
+    },
+    {
+      "id": "plug-office",
+      "name": "Ổ máy tính",
+      "room": "office"
+    },
+    {
+      "id": "light-balcony",
+      "name": "Đèn ban công",
+      "room": "balcony"
+    },
+    {
+      "id": "cam-balcony",
+      "name": "Camera ban công",
+      "room": "balcony"
+    }
+  ],
+  "devices": [
+    {
+      "id": "light-living",
+      "name": "Đèn phòng khách 1",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": true,
+        "brightness": 60
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "range",
+          "key": "brightness",
+          "label": "Độ sáng",
+          "min": 1.0,
+          "max": 100.0,
+          "unit": "%",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ac-living",
+      "name": "Điều hòa phòng khách",
+      "room": "living",
+      "kind": "snowflake",
+      "state": {
+        "power": true,
+        "temperature": 26,
+        "mode": "cool",
+        "fan": "medium"
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "step",
+          "key": "temperature",
+          "label": "Nhiệt độ",
+          "min": 16.0,
+          "max": 30.0,
+          "step": 1.0,
+          "unit": "°C",
+          "when": {
+            "power": true
+          }
+        },
+        {
+          "type": "enum",
+          "key": "mode",
+          "label": "Chế độ",
+          "options": [
+            {
+              "value": "cool",
+              "label": "Làm lạnh"
+            },
+            {
+              "value": "dry",
+              "label": "Hút ẩm"
+            },
+            {
+              "value": "fan",
+              "label": "Quạt"
+            }
+          ],
+          "when": {
+            "power": true
+          }
+        },
+        {
+          "type": "enum",
+          "key": "fan",
+          "label": "Tốc độ quạt",
+          "options": [
+            {
+              "value": "low",
+              "label": "Nhẹ"
+            },
+            {
+              "value": "medium",
+              "label": "Vừa"
+            },
+            {
+              "value": "high",
+              "label": "Mạnh"
+            }
+          ],
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "tv-living",
+      "name": "TV phòng khách",
+      "room": "living",
+      "kind": "tv",
+      "state": {
+        "power": false
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "speaker-living",
+      "name": "Loa phòng khách",
+      "room": "living",
+      "kind": "speaker",
+      "state": {
+        "power": true,
+        "volume": 35
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "range",
+          "key": "volume",
+          "label": "Âm lượng",
+          "min": 0.0,
+          "max": 100.0,
+          "unit": "%",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "heater-living",
+      "name": "Máy sưởi phòng khách",
+      "room": "living",
+      "kind": "flame",
+      "state": {
+        "power": false,
+        "temperature": 24
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "step",
+          "key": "temperature",
+          "label": "Nhiệt độ",
+          "min": 16.0,
+          "max": 30.0,
+          "step": 1.0,
+          "unit": "°C",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "door",
+      "name": "Cửa chính",
+      "room": "living",
+      "kind": "lock",
+      "state": {
+        "locked": true
+      },
+      "controls": [
+        {
+          "type": "action",
+          "key": "unlock",
+          "label": "Mở khóa cửa",
+          "variant": "danger",
+          "sensitive": true
+        },
+        {
+          "type": "action",
+          "key": "lock",
+          "label": "Đóng khóa cửa",
+          "sensitive": false
+        }
+      ]
+    },
+    {
+      "id": "cam-entrance",
+      "name": "Camera cửa",
+      "room": "living",
+      "kind": "camera",
+      "state": {
+        "recording": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "recording",
+          "label": "Ghi hình"
+        }
+      ]
+    },
+    {
+      "id": "light-bed",
+      "name": "Đèn phòng ngủ 1",
+      "room": "bed",
+      "kind": "bulb",
+      "state": {
+        "power": false
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "ac-bed",
+      "name": "Điều hòa phòng ngủ",
+      "room": "bed",
+      "kind": "snowflake",
+      "state": {
+        "power": true,
+        "temperature": 24,
+        "mode": "cool",
+        "fan": "low"
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "step",
+          "key": "temperature",
+          "label": "Nhiệt độ",
+          "min": 16.0,
+          "max": 30.0,
+          "step": 1.0,
+          "unit": "°C",
+          "when": {
+            "power": true
+          }
+        },
+        {
+          "type": "enum",
+          "key": "mode",
+          "label": "Chế độ",
+          "options": [
+            {
+              "value": "cool",
+              "label": "Làm lạnh"
+            },
+            {
+              "value": "dry",
+              "label": "Hút ẩm"
+            },
+            {
+              "value": "fan",
+              "label": "Quạt"
+            }
+          ],
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "curtain",
+      "name": "Rèm cửa sổ phòng ngủ",
+      "room": "bed",
+      "kind": "curtain",
+      "state": {
+        "preset": "ajar",
+        "position": 40
+      },
+      "controls": [
+        {
+          "type": "enum",
+          "key": "preset",
+          "label": "Mức mở",
+          "options": [
+            {
+              "value": "closed",
+              "label": "Đóng"
+            },
+            {
+              "value": "ajar",
+              "label": "Mở hé"
+            },
+            {
+              "value": "open",
+              "label": "Mở hết"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "key": "position",
+          "label": "Vị trí",
+          "min": 0.0,
+          "max": 100.0,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "id": "fan-bed",
+      "name": "Quạt trần phòng ngủ",
+      "room": "bed",
+      "kind": "fan",
+      "state": {
+        "speed": 0
+      },
+      "controls": [
+        {
+          "type": "level",
+          "key": "speed",
+          "label": "Nút quạt",
+          "levels": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "labels": [
+            "Tắt",
+            "1",
+            "2",
+            "3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light-kitchen",
+      "name": "Đèn bếp",
+      "room": "kitchen",
+      "kind": "bulb",
+      "state": {
+        "power": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "plug-kitchen",
+      "name": "Ổ nồi cơm",
+      "room": "kitchen",
+      "kind": "plug",
+      "state": {
+        "power": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "fan-kitchen",
+      "name": "Quạt hút bếp",
+      "room": "kitchen",
+      "kind": "fan",
+      "state": {
+        "speed": 2
+      },
+      "controls": [
+        {
+          "type": "level",
+          "key": "speed",
+          "label": "Nút quạt",
+          "levels": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "labels": [
+            "Tắt",
+            "1",
+            "2",
+            "3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light-bath",
+      "name": "Đèn trần phòng tắm",
+      "room": "bath",
+      "kind": "bulb",
+      "state": {
+        "power": false
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "heater-bath",
+      "name": "Máy nước nóng",
+      "room": "bath",
+      "kind": "droplet",
+      "state": {
+        "power": true,
+        "temperature": 42
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "step",
+          "key": "temperature",
+          "label": "Nhiệt độ nước",
+          "min": 35.0,
+          "max": 55.0,
+          "step": 1.0,
+          "unit": "°C",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "fan-bath",
+      "name": "Quạt thông gió",
+      "room": "bath",
+      "kind": "fan",
+      "state": {
+        "speed": 0
+      },
+      "controls": [
+        {
+          "type": "level",
+          "key": "speed",
+          "label": "Nút quạt",
+          "levels": [
+            0,
+            1,
+            2
+          ],
+          "labels": [
+            "Tắt",
+            "1",
+            "2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light-office",
+      "name": "Đèn phòng khách 4",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": true,
+        "brightness": 80
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "range",
+          "key": "brightness",
+          "label": "Độ sáng",
+          "min": 1.0,
+          "max": 100.0,
+          "unit": "%",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ac-office",
+      "name": "Điều hòa khu bàn máy tính",
+      "room": "living",
+      "kind": "snowflake",
+      "state": {
+        "power": false,
+        "temperature": 25,
+        "mode": "cool"
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "step",
+          "key": "temperature",
+          "label": "Nhiệt độ",
+          "min": 16.0,
+          "max": 30.0,
+          "step": 1.0,
+          "unit": "°C",
+          "when": {
+            "power": true
+          }
+        },
+        {
+          "type": "enum",
+          "key": "mode",
+          "label": "Chế độ",
+          "options": [
+            {
+              "value": "cool",
+              "label": "Làm lạnh"
+            },
+            {
+              "value": "dry",
+              "label": "Hút ẩm"
+            },
+            {
+              "value": "fan",
+              "label": "Quạt"
+            }
+          ],
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "plug-office",
+      "name": "Ổ máy tính",
+      "room": "living",
+      "kind": "plug",
+      "state": {
+        "power": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "light-balcony",
+      "name": "Đèn phòng khách 2",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": false
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "cam-balcony",
+      "name": "Camera cửa kính",
+      "room": "living",
+      "kind": "camera",
+      "state": {
+        "recording": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "recording",
+          "label": "Ghi hình"
+        }
+      ]
+    },
+    {
+      "id": "light-living-3",
+      "name": "Đèn phòng khách 3",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": false
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "light-living-5",
+      "name": "Đèn phòng khách 5",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": false,
+        "brightness": 60
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "range",
+          "key": "brightness",
+          "label": "Độ sáng",
+          "min": 1.0,
+          "max": 100.0,
+          "unit": "%",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "light-living-6",
+      "name": "Đèn phòng khách 6",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": false,
+        "brightness": 60
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "range",
+          "key": "brightness",
+          "label": "Độ sáng",
+          "min": 1.0,
+          "max": 100.0,
+          "unit": "%",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "light-living-7",
+      "name": "Đèn phòng khách 7",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": false,
+        "brightness": 60
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "range",
+          "key": "brightness",
+          "label": "Độ sáng",
+          "min": 1.0,
+          "max": 100.0,
+          "unit": "%",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "light-living-8",
+      "name": "Đèn phòng khách 8",
+      "room": "living",
+      "kind": "bulb",
+      "state": {
+        "power": false,
+        "brightness": 60
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        },
+        {
+          "type": "range",
+          "key": "brightness",
+          "label": "Độ sáng",
+          "min": 1.0,
+          "max": 100.0,
+          "unit": "%",
+          "when": {
+            "power": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "light-bed-2",
+      "name": "Đèn đầu giường phòng ngủ",
+      "room": "bed",
+      "kind": "bulb",
+      "state": {
+        "power": false
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "light-bath-mirror",
+      "name": "Đèn gương phòng tắm",
+      "room": "bath",
+      "kind": "bulb",
+      "state": {
+        "power": false
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "power",
+          "label": "Nguồn"
+        }
+      ]
+    },
+    {
+      "id": "curtain-bed-roller",
+      "name": "Rèm cuốn phòng ngủ",
+      "room": "bed",
+      "kind": "curtain",
+      "state": {
+        "preset": "closed",
+        "position": 0
+      },
+      "controls": [
+        {
+          "type": "enum",
+          "key": "preset",
+          "label": "Mức mở",
+          "options": [
+            {
+              "value": "closed",
+              "label": "Đóng"
+            },
+            {
+              "value": "ajar",
+              "label": "Mở hé"
+            },
+            {
+              "value": "open",
+              "label": "Mở hết"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "key": "position",
+          "label": "Vị trí",
+          "min": 0.0,
+          "max": 100.0,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "id": "curtain-living",
+      "name": "Rèm cửa kính phòng khách",
+      "room": "living",
+      "kind": "curtain",
+      "state": {
+        "preset": "closed",
+        "position": 0
+      },
+      "controls": [
+        {
+          "type": "enum",
+          "key": "preset",
+          "label": "Mức mở",
+          "options": [
+            {
+              "value": "closed",
+              "label": "Đóng"
+            },
+            {
+              "value": "ajar",
+              "label": "Mở hé"
+            },
+            {
+              "value": "open",
+              "label": "Mở hết"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "key": "position",
+          "label": "Vị trí",
+          "min": 0.0,
+          "max": 100.0,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "id": "curtain-kitchen",
+      "name": "Rèm cửa sổ bếp",
+      "room": "kitchen",
+      "kind": "curtain",
+      "state": {
+        "preset": "closed",
+        "position": 0
+      },
+      "controls": [
+        {
+          "type": "enum",
+          "key": "preset",
+          "label": "Mức mở",
+          "options": [
+            {
+              "value": "closed",
+              "label": "Đóng"
+            },
+            {
+              "value": "ajar",
+              "label": "Mở hé"
+            },
+            {
+              "value": "open",
+              "label": "Mở hết"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "key": "position",
+          "label": "Vị trí",
+          "min": 0.0,
+          "max": 100.0,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "id": "curtain-bath",
+      "name": "Rèm cửa sổ phòng tắm",
+      "room": "bath",
+      "kind": "curtain",
+      "state": {
+        "preset": "closed",
+        "position": 0
+      },
+      "controls": [
+        {
+          "type": "enum",
+          "key": "preset",
+          "label": "Mức mở",
+          "options": [
+            {
+              "value": "closed",
+              "label": "Đóng"
+            },
+            {
+              "value": "ajar",
+              "label": "Mở hé"
+            },
+            {
+              "value": "open",
+              "label": "Mở hết"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "key": "position",
+          "label": "Vị trí",
+          "min": 0.0,
+          "max": 100.0,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "id": "cam-living",
+      "name": "Camera phòng khách",
+      "room": "living",
+      "kind": "camera",
+      "state": {
+        "recording": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "recording",
+          "label": "Ghi hình"
+        }
+      ]
+    },
+    {
+      "id": "cam-bed",
+      "name": "Camera phòng ngủ",
+      "room": "bed",
+      "kind": "camera",
+      "state": {
+        "recording": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "recording",
+          "label": "Ghi hình"
+        }
+      ]
+    },
+    {
+      "id": "cam-kitchen",
+      "name": "Camera bếp",
+      "room": "kitchen",
+      "kind": "camera",
+      "state": {
+        "recording": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "recording",
+          "label": "Ghi hình"
+        }
+      ]
+    },
+    {
+      "id": "cam-tv",
+      "name": "Camera khu TV",
+      "room": "living",
+      "kind": "camera",
+      "state": {
+        "recording": true
+      },
+      "controls": [
+        {
+          "type": "toggle",
+          "key": "recording",
+          "label": "Ghi hình"
+        }
+      ]
+    }
+  ],
+  "bindings": [
+    {
+      "device_id": "light-living",
+      "object_name": "punto_luz_1",
+      "source_ref": "game_object:1683541555",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-balcony",
+      "object_name": "punto_luz_4",
+      "source_ref": "game_object:246711313",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-living-3",
+      "object_name": "punto_luz_7",
+      "source_ref": "game_object:485155071",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-office",
+      "object_name": "punto_luz_3",
+      "source_ref": "game_object:1876477424",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-living-5",
+      "object_name": "punto_luz_8",
+      "source_ref": "game_object:2056325552",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-living-6",
+      "object_name": "punto_luz_9",
+      "source_ref": "game_object:442373278",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-living-7",
+      "object_name": "punto_luz_10",
+      "source_ref": "game_object:1004273151",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-living-8",
+      "object_name": "punto_luz_11",
+      "source_ref": "game_object:918458467",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-bed",
+      "object_name": "punto_luz_12",
+      "source_ref": "game_object:980822439",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-bed-2",
+      "object_name": "punto_luz_13",
+      "source_ref": "game_object:922450801",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-kitchen",
+      "object_name": "punto_luz_2",
+      "source_ref": "game_object:2072922615",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-bath",
+      "object_name": "punto_luz_5",
+      "source_ref": "game_object:936903267",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "light-bath-mirror",
+      "object_name": "punto_luz_6",
+      "source_ref": "game_object:1523471354",
+      "binding_kind": "light"
+    },
+    {
+      "device_id": "curtain",
+      "object_name": "persiana_dormitorio",
+      "source_ref": "game_object:1294729781",
+      "binding_kind": "curtain"
+    },
+    {
+      "device_id": "curtain-bed-roller",
+      "object_name": "estor_dormitorio",
+      "source_ref": "game_object:1803171870",
+      "binding_kind": "curtain"
+    },
+    {
+      "device_id": "curtain-living",
+      "object_name": "estor_ventanal",
+      "source_ref": "game_object:1696505555",
+      "binding_kind": "curtain"
+    },
+    {
+      "device_id": "curtain-kitchen",
+      "object_name": "persiana_cocina",
+      "source_ref": "game_object:1500603428",
+      "binding_kind": "curtain"
+    },
+    {
+      "device_id": "curtain-bath",
+      "object_name": "persiana_baño",
+      "source_ref": "game_object:1386191806",
+      "binding_kind": "curtain"
+    },
+    {
+      "device_id": "cam-entrance",
+      "object_name": "camara_ENTRADA",
+      "source_ref": "prefab_instance:922824021",
+      "binding_kind": "camera"
+    },
+    {
+      "device_id": "cam-balcony",
+      "object_name": "camara_VENTANAL",
+      "source_ref": "prefab_instance:1446704627",
+      "binding_kind": "camera"
+    },
+    {
+      "device_id": "cam-living",
+      "object_name": "Camera_SALON",
+      "source_ref": "prefab_instance:1568793768",
+      "binding_kind": "camera"
+    },
+    {
+      "device_id": "cam-bed",
+      "object_name": "Camera_HABITACION",
+      "source_ref": "prefab_instance:404119791",
+      "binding_kind": "camera"
+    },
+    {
+      "device_id": "cam-kitchen",
+      "object_name": "Camera_COCINA",
+      "source_ref": "prefab_instance:277518556",
+      "binding_kind": "camera"
+    },
+    {
+      "device_id": "cam-tv",
+      "object_name": "camara_TV",
+      "source_ref": "prefab_instance:1715610386",
+      "binding_kind": "camera"
+    },
+    {
+      "device_id": "tv-living",
+      "object_name": "TV",
+      "source_ref": "prefab_instance:2051729301",
+      "binding_kind": "tv"
+    },
+    {
+      "device_id": "speaker-living",
+      "object_name": "Speaker",
+      "source_ref": "prefab_instance:994465538",
+      "binding_kind": "speaker"
+    },
+    {
+      "device_id": "fan-kitchen",
+      "object_name": "campana",
+      "source_ref": "prefab_instance:1705393556",
+      "binding_kind": "fan"
+    }
+  ],
+  "removed_aliases": {
+    "light-living": [
+      "đèn phòng khách",
+      "den phong khach"
+    ],
+    "light-bed": [
+      "đèn phòng ngủ"
+    ],
+    "curtain": [
+      "rèm",
+      "rèm cửa",
+      "rèm phòng ngủ",
+      "kéo rèm"
+    ]
+  }
+}

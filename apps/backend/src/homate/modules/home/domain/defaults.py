@@ -1,4 +1,5 @@
 from homate.modules.home.domain.device import Device
+from homate.modules.home.domain.simulation_catalog import align_devices
 
 def default_devices() -> list[Device]:
     """Return initial in-memory device catalog (validated by Pydantic)."""
@@ -387,7 +388,7 @@ def default_devices() -> list[Device]:
             ],
         },
     ]
-    return [Device.model_validate(item) for item in raw]
+    return align_devices(raw)
 
 def mvp_devices() -> list[Device]:
     """Core devices for Sprint 1 demos."""

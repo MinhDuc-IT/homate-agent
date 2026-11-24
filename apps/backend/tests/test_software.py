@@ -44,12 +44,12 @@ def admin(client):
     return {"Authorization": "Bearer " + response.json()["access_token"]}
 
 
-def test_seed_matches_p072_and_startup_is_idempotent(client, admin):
+def test_seed_matches_casa_and_startup_is_idempotent(client, admin):
     home = client.get("/api/dashboard/home").json()
-    assert home["name"] == "Michelin Bois" and len(home["rooms"]) == 6
+    assert home["name"] == "Michelin Bois" and {r['id'] for r in home['rooms']} == {'living', 'bed', 'kitchen', 'bath'}
     assert {u["id"] for u in home["members"]} == {"minh-duc", "vinh", "thanh", "truong"}
     devices = client.get("/api/dashboard/devices", headers=admin).json()
-    assert len(devices) == 22 and {"door", "curtain", "light-living", "ac-bed"} <= {d["id"] for d in devices}
+    assert len(devices) == 37 and {"door", "curtain", "light-living", "ac-bed"} <= {d["id"] for d in devices}
     household.init_and_seed(client.app.state.database_url)
     assert len(household.load_devices(client.app.state.database_url)) == len(devices)
     assert client.get("/health").json()["ai_enabled"] is False

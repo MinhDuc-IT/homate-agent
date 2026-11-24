@@ -21,6 +21,12 @@ def status():
     return {"status": "ready", "ai_enabled": False}
 
 
+@router.get('/simulation')
+def simulation(service=Depends(get_household_service), user=Depends(get_current_user)):
+    return {'scene_id': 'casa', 'device_sync': False,
+            'devices': service.load_simulation_catalog(user['home_id'])}
+
+
 @router.get("/devices", response_model=list[Device])
 def devices(store=Depends(get_device_store), user=Depends(get_current_user)):
     return store.list()
