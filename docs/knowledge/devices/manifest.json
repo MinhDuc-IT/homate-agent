@@ -12,12 +12,17 @@
   {
     "device_id": "ac-office",
     "filename": "ac-office.md",
-    "title": "HomeMate mô phỏng · Điều hòa phòng làm việc"
+    "title": "HomeMate mô phỏng · Điều hòa khu bàn máy tính"
   },
   {
     "device_id": "cam-balcony",
     "filename": "cam-balcony.md",
-    "title": "HomeMate mô phỏng · Camera ban công"
+    "title": "HomeMate mô phỏng · Camera cửa kính"
+  },
+  {
+    "device_id": "cam-bed",
+    "filename": "cam-bed.md",
+    "title": "HomeMate mô phỏng · Camera phòng ngủ"
   },
   {
     "device_id": "cam-entrance",
@@ -25,9 +30,44 @@
     "title": "HomeMate mô phỏng · Camera cửa"
   },
   {
+    "device_id": "cam-kitchen",
+    "filename": "cam-kitchen.md",
+    "title": "HomeMate mô phỏng · Camera bếp"
+  },
+  {
+    "device_id": "cam-living",
+    "filename": "cam-living.md",
+    "title": "HomeMate mô phỏng · Camera phòng khách"
+  },
+  {
+    "device_id": "cam-tv",
+    "filename": "cam-tv.md",
+    "title": "HomeMate mô phỏng · Camera khu TV"
+  },
+  {
     "device_id": "curtain",
     "filename": "curtain.md",
-    "title": "HomeMate mô phỏng · Rèm phòng ngủ"
+    "title": "HomeMate mô phỏng · Rèm cửa sổ phòng ngủ"
+  },
+  {
+    "device_id": "curtain-bath",
+    "filename": "curtain-bath.md",
+    "title": "HomeMate mô phỏng · Rèm cửa sổ phòng tắm"
+  },
+  {
+    "device_id": "curtain-bed-roller",
+    "filename": "curtain-bed-roller.md",
+    "title": "HomeMate mô phỏng · Rèm cuốn phòng ngủ"
+  },
+  {
+    "device_id": "curtain-kitchen",
+    "filename": "curtain-kitchen.md",
+    "title": "HomeMate mô phỏng · Rèm cửa sổ bếp"
+  },
+  {
+    "device_id": "curtain-living",
+    "filename": "curtain-living.md",
+    "title": "HomeMate mô phỏng · Rèm cửa kính phòng khách"
   },
   {
     "device_id": "door",
@@ -62,17 +102,27 @@
   {
     "device_id": "light-balcony",
     "filename": "light-balcony.md",
-    "title": "HomeMate mô phỏng · Đèn ban công"
+    "title": "HomeMate mô phỏng · Đèn phòng khách 2"
   },
   {
     "device_id": "light-bath",
     "filename": "light-bath.md",
-    "title": "HomeMate mô phỏng · Đèn phòng tắm"
+    "title": "HomeMate mô phỏng · Đèn trần phòng tắm"
+  },
+  {
+    "device_id": "light-bath-mirror",
+    "filename": "light-bath-mirror.md",
+    "title": "HomeMate mô phỏng · Đèn gương phòng tắm"
   },
   {
     "device_id": "light-bed",
     "filename": "light-bed.md",
-    "title": "HomeMate mô phỏng · Đèn phòng ngủ"
+    "title": "HomeMate mô phỏng · Đèn phòng ngủ 1"
+  },
+  {
+    "device_id": "light-bed-2",
+    "filename": "light-bed-2.md",
+    "title": "HomeMate mô phỏng · Đèn đầu giường phòng ngủ"
   },
   {
     "device_id": "light-kitchen",
@@ -82,12 +132,37 @@
   {
     "device_id": "light-living",
     "filename": "light-living.md",
-    "title": "HomeMate mô phỏng · Đèn phòng khách"
+    "title": "HomeMate mô phỏng · Đèn phòng khách 1"
+  },
+  {
+    "device_id": "light-living-3",
+    "filename": "light-living-3.md",
+    "title": "HomeMate mô phỏng · Đèn phòng khách 3"
+  },
+  {
+    "device_id": "light-living-5",
+    "filename": "light-living-5.md",
+    "title": "HomeMate mô phỏng · Đèn phòng khách 5"
+  },
+  {
+    "device_id": "light-living-6",
+    "filename": "light-living-6.md",
+    "title": "HomeMate mô phỏng · Đèn phòng khách 6"
+  },
+  {
+    "device_id": "light-living-7",
+    "filename": "light-living-7.md",
+    "title": "HomeMate mô phỏng · Đèn phòng khách 7"
+  },
+  {
+    "device_id": "light-living-8",
+    "filename": "light-living-8.md",
+    "title": "HomeMate mô phỏng · Đèn phòng khách 8"
   },
   {
     "device_id": "light-office",
     "filename": "light-office.md",
-    "title": "HomeMate mô phỏng · Đèn bàn làm việc"
+    "title": "HomeMate mô phỏng · Đèn phòng khách 4"
   },
   {
     "device_id": "plug-kitchen",

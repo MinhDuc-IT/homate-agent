@@ -163,6 +163,29 @@ npx.cmd playwright test
 
 Playwright cần backend cổng 8000 và Microsoft Edge. Cấu hình tự khởi động Vite nếu chưa chạy; phản hồi chat được giả lập, proposal/decision gọi backend thật. Các test AI dùng model/HTTP transport giả lập và không sử dụng key trong `.env` để gọi LLM thật.
 
+## Bản xem nhà 3D
+
+Source Unity nằm ở `apps/unity-sim`, scene gốc `Assets/Scenes/CASA.unity`. Màn hình `/house-3d` chỉ mở Unity khi có bản build hoàn tất. Bước này mới hiển thị mô hình, chưa đồng bộ thiết bị.
+
+Thanh góc nhìn cho phép chuyển nhanh giữa toàn cảnh, phòng khách, phòng ngủ, phòng bếp và cửa vào. Các góc phòng lấy từ camera có sẵn trong scene. Trong phòng, kéo chuột để nhìn quanh tại chỗ và cuộn để đổi mức phóng đại; chọn Toàn cảnh để trở lại chế độ xoay quanh nhà. Nút chọn góc nhìn chỉ bật sau khi mô hình tải xong.
+
+Danh mục demo lấy scene CASA làm chuẩn: 4 phòng (`living`, `bed`, `kitchen`, `bath`), 37 thiết bị, trong đó 27 thiết bị có object 3D tương ứng: 13 nhóm đèn, 5 bộ rèm, 6 camera, TV, loa và quạt hút bếp. 10 thiết bị còn lại vẫn là mô phỏng phần mềm, chưa có model được xác minh. Đồ nội thất và các đồ gia dụng khác chỉ là vật trang trí, chưa tự động trở thành thiết bị thông minh.
+
+Các thiết bị chưa có model: `ac-living`, `ac-bed`, `ac-office`, `heater-living`, `heater-bath`, `door`, `fan-bed`, `fan-bath`, `plug-kitchen`, `plug-office`. Không gán chúng vào object khác chỉ vì có tên hoặc vị trí gần giống.
+
+API có xác thực `GET /api/dashboard/simulation` trả về danh sách binding và trạng thái `mapped`/`unmapped`. `mapped` chỉ xác nhận đã xác định được object; `device_sync=false` nghĩa là chưa truyền trạng thái backend sang Unity. Binding giữ cả tên object và tham chiếu gốc (`game_object:<fileID>` hoặc `prefab_instance:<fileID>`) để phân biệt model camera với camera dùng để quan sát scene. Các tham chiếu này thuộc `Assets/Scenes/CASA.unity`, không phải ID của scene sinh ra khi build.
+
+Migration `0006` chuyển thiết bị và số liệu điện năng của khu làm việc/ban công cũ về phòng khách, giữ ID, trạng thái, control, kịch bản và lịch. Một số tên demo được cập nhật theo nhóm đèn/camera trong scene; tên do người dùng tự đặt được giữ. Các ID cũ như `light-office`, `light-balcony`, `cam-balcony`, `ac-office`, `plug-office` vẫn được giữ để không làm đứt tham chiếu. Migration lưu snapshot trước thay đổi trong `homate.simulation_catalog_migrations` và chỉ hỗ trợ nâng cấp; muốn hoàn tác toàn bộ cần khôi phục bản sao lưu PostgreSQL trước migration. Không dùng `docker compose down -v` để cập nhật danh mục.
+
+Mở project bằng Unity Editor 6000.0.38f1 có WebGL Build Support, kích hoạt license trong Unity Hub. Từ PowerShell tại thư mục gốc project:
+
+```powershell
+./tools/build_unity.ps1 -UnityEditor 'I:\Program Files\Unity\Hub\Editor\6000.0.38f1\Editor\Unity.exe'
+docker compose up -d --build web
+```
+
+Script tạo bản sao scene để build; không sửa scene gốc. Bản xem gỡ logic MQTT/UDP/avatar cũ khỏi scene build, ẩn UI Unity cũ, tắt âm thanh và bỏ component bị thiếu script trong bản sao. Các tham chiếu asset thiếu khác vẫn cần kiểm tra trong Unity Editor. Log build nằm ở `.work/unity-webgl.log`; binary WebGL và cache Unity không đưa vào Git. Docker chỉ phục vụ bản WebGL đã build, không tự chạy Unity Editor. Script đặt cache package/build và file tạm trong `.work` trên cùng ổ với project. Đặt thư mục Editor và module trên ổ I trong Hub trước khi cài; Hub/Windows vẫn có thể tạo dữ liệu cấu hình trong hồ sơ người dùng.
+
 ## Xử lý lỗi thường gặp
 
 | Hiện tượng | Kiểm tra |

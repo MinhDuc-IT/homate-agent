@@ -12,7 +12,7 @@ Camera cửa tại Phòng khách (cam-entrance): control recording chỉ thay đ
 
 Với Camera cửa tại Phòng khách (cam-entrance), mở danh sách Thiết bị, chọn đúng tên và dùng các control đã liệt kê. Nếu control yêu cầu nguồn bật, hãy bật thiết bị trước khi chỉnh trực tiếp.
 
-Khi gửi yêu cầu cho trợ lý về Camera cửa tại Phòng khách (cam-entrance), nêu rõ tên/phòng và giá trị muốn đặt. Agent tạo đề xuất, chưa thực thi cho đến khi người dùng bấm Xác nhận. Có thể Từ chối nếu sai thiết bị hoặc sai giá trị. Đề xuất hết hạn thì gửi yêu cầu mới.
+Khi gửi yêu cầu cho trợ lý về Camera cửa tại Phòng khách (cam-entrance), nêu rõ tên/phòng và giá trị muốn đặt. Thao tác thông thường có thể thực hiện ngay khi yêu cầu đã rõ và hợp lệ. Với thao tác cần xác nhận hoặc có xung đột, kiểm tra đề xuất trước khi đồng ý; có thể từ chối nếu sai thiết bị hoặc giá trị. Nếu đề xuất hết hạn, hãy gửi yêu cầu mới.
 
 ## Xử lý yêu cầu không được hỗ trợ cho Camera cửa
 

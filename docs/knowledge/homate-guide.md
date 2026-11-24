@@ -2,7 +2,11 @@
 
 ## Xác nhận thao tác của trợ lý
 
-Khi trợ lý đề xuất điều khiển thiết bị hoặc tạo, sửa, xóa kịch bản và lịch, thao tác chưa được thực hiện ngay. Người dùng cần kiểm tra thẻ đề xuất và bấm Xác nhận. Bấm Từ chối nếu nội dung không đúng ý. Đề xuất hết hạn thì cần gửi yêu cầu mới.
+Thao tác thông thường có thể được thực hiện ngay khi yêu cầu đã rõ và hợp lệ. Với thao tác nhạy cảm, thay đổi kịch bản/lịch hoặc có xung đột cần giải quyết, HomeMate có thể yêu cầu xác nhận. Người dùng cần kiểm tra nội dung đề xuất trước khi đồng ý; từ chối nếu không đúng ý. Đề xuất hết hạn thì gửi yêu cầu mới.
+
+## Phòng và mô hình 3D
+
+Căn nhà demo có phòng khách (gồm cửa vào và bàn máy tính), phòng ngủ, bếp và phòng tắm. Trang Nhà 3D cho phép chọn nhanh góc nhìn. Danh mục gồm 13 nhóm đèn và 5 bộ rèm độc lập theo scene; khi có nhiều thiết bị phù hợp, hãy chọn đúng nhóm cần điều khiển. Một số thiết bị còn là mô phỏng phần mềm, chưa có model 3D. Việc có model tương ứng chưa có nghĩa trạng thái backend đã được đồng bộ vào mô hình.
 
 ## Lịch tự động
 
@@ -10,7 +14,7 @@ HomeMate hỗ trợ lịch chạy một lần, lặp hằng ngày hoặc hằng 
 
 ## Giọng nói
 
-Nhấn Aura trên header để thu âm và nhấn lại để gửi. HomeMate nhận dạng câu nói, xử lý qua agent và đọc phản hồi. Văn bản câu lệnh và phản hồi hiển thị ngay cạnh Aura. Thao tác thay đổi dữ liệu vẫn cần xác nhận. Micro cần HTTPS hoặc localhost.
+Nhấn Aura trên header để thu âm và nhấn lại để gửi. HomeMate nhận dạng câu nói, xử lý qua agent và đọc phản hồi. Văn bản câu lệnh và phản hồi hiển thị ngay cạnh Aura. Quy tắc thực thi và xác nhận giống khi nhập văn bản. Micro cần HTTPS hoặc localhost.
 
 ## Điện năng
 
