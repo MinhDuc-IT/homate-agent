@@ -77,8 +77,9 @@ def render(device, room):
         f'Với {identity}, mở danh sách Thiết bị, chọn đúng tên và dùng các control đã liệt kê. '
         'Nếu control yêu cầu nguồn bật, hãy bật thiết bị trước khi chỉnh trực tiếp.' + agent_hint,
         f'Khi gửi yêu cầu cho trợ lý về {identity}, nêu rõ tên/phòng và giá trị muốn đặt. '
-        'Agent tạo đề xuất, chưa thực thi cho đến khi người dùng bấm Xác nhận. Có thể Từ chối nếu sai thiết bị hoặc sai giá trị. '
-        'Đề xuất hết hạn thì gửi yêu cầu mới.',
+        'Thao tác thông thường có thể thực hiện ngay khi yêu cầu đã rõ và hợp lệ. '
+        'Với thao tác cần xác nhận hoặc có xung đột, kiểm tra đề xuất trước khi đồng ý; có thể từ chối nếu sai thiết bị hoặc giá trị. '
+        'Nếu đề xuất hết hạn, hãy gửi yêu cầu mới.',
         f'## Xử lý yêu cầu không được hỗ trợ cho {name}',
         f'Với {identity}, nếu giá trị ngoài giới hạn hoặc chức năng không nằm trong controls, không cố dùng tham số của thiết bị khác. '
         'Kiểm tra lại dữ liệu backend và điều kiện nguồn; nếu cấu hình đã đổi, tài liệu này cần được sinh/nạp lại. '
@@ -115,7 +116,9 @@ def main():
             filename=device['id']+'.md'; title=GUIDE_PREFIX+device['name']
             content=render(device,rooms.get(device['room'],device['room']))
             (output/filename).write_text(content,encoding='utf-8')
-            matches=[d for d in existing if d['filename']==filename and d['title']==title and d['device_ids']==[device['id']]]
+            # A renamed device still owns the same generated guide. Do not leave
+            # the old title indexed alongside the replacement.
+            matches=[d for d in existing if d['filename']==filename and d['title'].startswith(GUIDE_PREFIX) and d['device_ids']==[device['id']]]
             unchanged=None
             for document in matches:
                 source=client.get(f'/api/rag/documents/{document["id"]}/source',headers=headers); source.raise_for_status()
