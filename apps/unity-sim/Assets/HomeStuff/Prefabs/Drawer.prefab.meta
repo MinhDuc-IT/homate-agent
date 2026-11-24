@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1238da40397ef9d428b6d3212674e684
+timeCreated: 1471470411
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/Drawer.prefab
+  uploadId: 132877

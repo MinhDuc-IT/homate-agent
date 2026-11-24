@@ -13,3 +13,18 @@ test-results/
 .work/
 
 apps/speech-service/models/
+
+# Unity generated files
+apps/unity-sim/[Ll]ibrary/
+apps/unity-sim/[Tt]emp/
+apps/unity-sim/[Oo]bj/
+apps/unity-sim/[Ll]ogs/
+apps/unity-sim/[Uu]serSettings/
+apps/unity-sim/.vs/
+apps/unity-sim/*.csproj
+apps/unity-sim/*.sln
+apps/unity-sim/Assets/HomateGenerated/
+apps/unity-sim/Assets/HomateGenerated.meta
+apps/web/public/unity/Build/
+apps/web/public/unity/build-status.json
+apps/web/public/unity/homate-bridge.js

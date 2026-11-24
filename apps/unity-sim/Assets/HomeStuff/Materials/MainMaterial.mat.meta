@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 38df50251b714ba4580b6887e3eeaf1a
+timeCreated: 1470674030
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Materials/MainMaterial.mat
+  uploadId: 132877

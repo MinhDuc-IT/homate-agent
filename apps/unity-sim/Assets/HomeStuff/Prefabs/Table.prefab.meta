@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3d257e714ef9ccd449e0d0e0e373e1e5
+timeCreated: 1471470367
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/Table.prefab
+  uploadId: 132877

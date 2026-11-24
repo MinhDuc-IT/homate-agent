@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f77ebcdeb49293c40889ebc9f839e6e4
+timeCreated: 1471470376
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/SmallTable.prefab
+  uploadId: 132877

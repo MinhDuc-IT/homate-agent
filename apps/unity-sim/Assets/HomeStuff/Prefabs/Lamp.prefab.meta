@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c34cb3bdef7a4304dbaea59504e23078
+timeCreated: 1471470413
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/Lamp.prefab
+  uploadId: 132877

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c90de59bff4939e4bbe4cd9324b0decc
+timeCreated: 1471470374
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/Sofa.prefab
+  uploadId: 132877

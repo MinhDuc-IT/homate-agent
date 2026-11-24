@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d7d1b586e081e1b449b95c91f43f6281
+timeCreated: 1471470408
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/Mirror.prefab
+  uploadId: 132877

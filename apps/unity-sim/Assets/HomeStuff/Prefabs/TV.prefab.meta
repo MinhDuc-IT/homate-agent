@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 7841159c855bb0d44bcc9f1f89548d64
+timeCreated: 1471470381
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/TV.prefab
+  uploadId: 132877

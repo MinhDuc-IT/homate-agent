@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 738c078743e37d34baf164992215b776
+timeCreated: 1471470368
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/Trash.prefab
+  uploadId: 132877

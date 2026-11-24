@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f266cbc0b1e72924f909c3ea2b746949
+timeCreated: 1471470378
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/TVTable.prefab
+  uploadId: 132877

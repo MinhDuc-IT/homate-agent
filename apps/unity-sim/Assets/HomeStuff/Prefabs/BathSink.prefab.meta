@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e1b42a4f28b93f74c8031aa95708fed2
+timeCreated: 1471470383
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/BathSink.prefab
+  uploadId: 132877

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e053dc897fa5cd74dbc81e55e06a1614
+timeCreated: 1471470421
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 69129
+  packageName: Simple Home Stuff
+  packageVersion: 1.0
+  assetPath: Assets/HomeStuff/Prefabs/TallLamp.prefab
+  uploadId: 132877
