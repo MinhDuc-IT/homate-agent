@@ -1,5 +1,5 @@
 [
-  {"id":"clear-device","text":"Tắt đèn phòng khách","expected_decisions":["ready_for_review"],"expected_capabilities":["control_device"],"expected_arguments":{"0.device_id":"light-living","0.action":"turn_off"}},
+  {"id":"clear-device","text":"Tắt đèn phòng khách 1","expected_decisions":["ready_for_review"],"expected_capabilities":["control_device"],"expected_arguments":{"0.device_id":"light-living","0.action":"turn_off"}},
   {"id":"ambiguous-room","text":"Tắt đèn","expected_decisions":["needs_clarification"],"expected_issues":["ambiguous_target","missing_parameter","unresolved_meaning"]},
   {"id":"temperature-explicit","text":"Đặt điều hòa phòng ngủ 24 độ","expected_decisions":["ready_for_review"],"expected_capabilities":["control_device"],"expected_arguments":{"0.device_id":"ac-bed","0.parameters.temperature":24}},
   {"id":"relative-temperature","text":"Cho phòng ngủ mát hơn chút","expected_decisions":["needs_clarification"],"expected_issues":["missing_parameter","unresolved_meaning","indirect_request"]},
@@ -10,8 +10,8 @@
   {"id":"missing-location","text":"Trong này tối quá","expected_decisions":["needs_clarification"],"expected_issues":["indirect_request","unresolved_reference","unresolved_meaning"]},
   {"id":"unsupported-washer","text":"Bật máy giặt giúp tôi","expected_decisions":["unsupported","needs_clarification"],"expected_issues":["unsupported_capability","target_not_found"]},
   {"id":"unsupported-trigger","text":"Nếu phòng ngủ nóng hơn 30 độ thì bật điều hòa","expected_decisions":["unsupported"],"expected_issues":["unsupported_condition","unsupported_capability"]},
-  {"id":"exclude-device","text":"Tắt tất cả đèn trừ đèn ban công","expected_decisions":["needs_data"],"expected_issues":["plan_required"]},
-  {"id":"ordered-chain","text":"Tắt đèn phòng khách rồi bật quạt phòng ngủ","expected_decisions":["needs_data","mixed"],"expected_issues":["plan_required"],"min_intents":2},
+  {"id":"exclude-device","text":"Tắt tất cả đèn trừ đèn gương phòng tắm","expected_decisions":["needs_data"],"expected_issues":["plan_required"]},
+  {"id":"ordered-chain","text":"Tắt đèn phòng khách 1 rồi bật quạt phòng ngủ","expected_decisions":["needs_data","mixed"],"expected_issues":["plan_required"],"min_intents":2},
   {"id":"mixed-support","text":"Tắt đèn phòng khách và giặt quần áo","expected_decisions":["mixed"],"min_intents":2},
   {"id":"energy-today","text":"Hôm nay nhà tôi dùng bao nhiêu điện?","expected_decisions":["ready_for_review"],"expected_capabilities":["get_energy_report"]},
   {"id":"energy-device","text":"Điều hòa phòng ngủ tháng này dùng bao nhiêu điện?","expected_decisions":["ready_for_review"],"expected_capabilities":["get_energy_report"],"expected_arguments":{"0.device_id":"ac-bed","0.period":"month"}},

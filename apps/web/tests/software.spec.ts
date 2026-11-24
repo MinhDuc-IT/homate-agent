@@ -29,7 +29,7 @@ test('manual device control persists in PostgreSQL', async ({ page }) => {
   await page.getByRole('button', { name: /Đăng nhập vào không gian sống/ }).click()
   await expect(page).toHaveURL(/dashboard/)
   await page.goto('/devices')
-  await page.getByRole('button', { name: /Đèn phòng khách/ }).click()
+  await page.getByRole('button', { name: /Đèn phòng khách 1/ }).click()
   const toggle = page.getByRole('button', { name: /^(Bật|Tắt) thiết bị$/ })
   const previous = await toggle.getAttribute('aria-label')
   const response = page.waitForResponse(r => r.url().includes('/devices/light-living/actions') && r.request().method() === 'POST')
@@ -38,7 +38,7 @@ test('manual device control persists in PostgreSQL', async ({ page }) => {
   const next = previous === 'Bật thiết bị' ? 'Tắt thiết bị' : 'Bật thiết bị'
   await expect(toggle).toHaveAttribute('aria-label', next)
   await page.reload()
-  await page.getByRole('button', { name: /Đèn phòng khách/ }).click()
+  await page.getByRole('button', { name: /Đèn phòng khách 1/ }).click()
   await expect(toggle).toHaveAttribute('aria-label', next)
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-label', previous!)
