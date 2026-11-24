@@ -2,6 +2,7 @@ export const ROUTES = {
   login: '/login',
   assistant: '/assistant',
   dashboard: '/dashboard',
+  house3d: '/house-3d',
   room: '/room',
   energy: '/energy',
   devices: '/devices',

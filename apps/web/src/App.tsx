@@ -10,6 +10,7 @@ import { AssistantScreen } from '@/screens/AssistantScreen'
 import { CameraScreen } from '@/screens/CameraScreen'
 import { ClarifyDialog } from '@/screens/ClarifyDialog'
 import { Dashboard } from '@/screens/Dashboard'
+import { House3DScreen } from '@/screens/House3DScreen'
 import { DeviceScreen } from '@/screens/DeviceScreen'
 import { EnergyScreen } from '@/screens/EnergyScreen'
 import { HitlDialog } from '@/screens/HitlDialog'
@@ -36,6 +37,7 @@ export default function App() {
 
             <Route element={<AppLayout />}>
               <Route path={ROUTES.dashboard} element={<Dashboard />} />
+              <Route path={ROUTES.house3d} element={<House3DScreen />} />
               <Route path={ROUTES.assistant} element={<AssistantScreen />} />
               <Route path={ROUTES.room} element={<RoomScreen />} />
               <Route path={ROUTES.energy} element={<EnergyScreen />} />

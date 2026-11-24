@@ -26,6 +26,7 @@ export function AppLayout() {
 
   const navItems = [
     { to: ROUTES.dashboard, label: 'Trang chủ', icon: NavHomeIcon },
+    { to: ROUTES.house3d, label: 'Nhà 3D', icon: NavRoomIcon },
     { to: ROUTES.assistant, label: 'Trợ lý', icon: NavSceneIcon },
     { to: ROUTES.room, label: 'Phòng', icon: NavRoomIcon },
     { to: ROUTES.energy, label: 'Điện năng', icon: NavEnergyIcon },
