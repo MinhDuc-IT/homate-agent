@@ -23,6 +23,8 @@ from homate.infrastructure.postgres.schedules import ScheduleService as Postgres
 from homate.infrastructure.realtime import ConnectionManager, pending_hitl
 from homate.infrastructure.weather import WeatherCache
 from homate.modules.home.application.devices import DeviceStore
+from homate.modules.home.application.gateway import DeviceGateway, SimulatorAdapter, DeviceTransportError
+from homate.infrastructure.postgres.device_gateway import PostgresCommandRepository
 from homate.modules.energy.application.service import EnergyService
 from homate.modules.automation.application.service import ScheduleService
 from homate.presentation import auth, dashboard, users, scenes, schedules, settings, ambient, energy
@@ -44,12 +46,23 @@ def create_app(database_url=None, *, start_workers=True):
             try: meter.record(device)
             except Exception: logging.getLogger(__name__).exception("Energy sample failed after state was saved")
 
+        commands = PostgresCommandRepository(database_url)
+        commands.recover()
+        gateway = DeviceGateway(commands, {'simulator': SimulatorAdapter()})
+
+        def dispatch(device):
+            reported = gateway.execute(device)
+            try: meter.record(reported)
+            except Exception: logging.getLogger(__name__).exception('Energy sample failed after command')
+            return reported
+
         store = DeviceStore(household.load_devices(database_url), on_change=persist,
-            conflict_rules=lambda: household.load_device_conflicts(database_url))
+            conflict_rules=lambda: household.load_device_conflicts(database_url), on_command=dispatch)
         manager = ConnectionManager()
         scheduler = ScheduleService(PostgresSchedules(database_url, store), service, store)
         app.state.household_service = service
         app.state.device_store = store
+        app.state.device_gateway = gateway
         app.state.ws_manager = manager
         app.state.energy_service = meter
         app.state.schedule_service = scheduler
@@ -83,6 +96,10 @@ def create_app(database_url=None, *, start_workers=True):
     @app.exception_handler(ValueError)
     async def invalid_value(request: Request, error):
         return JSONResponse(status_code=400, content={"detail": str(error)})
+
+    @app.exception_handler(DeviceTransportError)
+    async def transport_error(request: Request, error):
+        return JSONResponse(status_code=503, content={'detail': 'Thiết bị chưa thực hiện được lệnh. Bạn thử lại nhé.'})
 
     @app.get("/health")
     def health():

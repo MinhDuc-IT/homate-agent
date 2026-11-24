@@ -45,12 +45,14 @@ class DeviceStore:
         devices: list[Device] | None = None,
         on_change: OnChangeCallback | None = None,
         conflict_rules: Callable[[], dict] | None = None,
+        on_command: Callable[[Device], Device] | None = None,
     ) -> None:
         source = devices if devices is not None else default_devices()
         self._devices: dict[str, Device] = {
             d.id: d.model_copy(deep=True) for d in source
         }
         self._on_change = on_change
+        self._on_command = on_command
         self._lock = threading.RLock()
         self._conflict_rules = conflict_rules
 
@@ -161,7 +163,11 @@ class DeviceStore:
                 related.append(self.apply_action(identifier, off_key, off_value).device)
             snapshot = device.model_copy(deep=True)
             # Publish the new state only after the persistence callback succeeds.
-            if self._on_change is not None:
+            if self._on_command is not None:
+                snapshot = self._on_command(snapshot)
+                device = snapshot.model_copy(deep=True)
+                new_value = snapshot.state.get(changed_key)
+            elif self._on_change is not None:
                 self._on_change(snapshot)
             self._devices[device_id] = device
 

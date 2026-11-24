@@ -57,7 +57,8 @@ def test_bound_devices_identify_real_scene_objects():
 def test_authenticated_catalog_distinguishes_mapping_from_state_sync(client, admin):
     assert client.get('/api/dashboard/simulation').status_code == 401
     result = client.get('/api/dashboard/simulation', headers=admin).json()
-    assert result['scene_id'] == 'casa' and result['device_sync'] is False
+    assert result['scene_id'] == 'casa' and result['device_sync'] is True
+    assert result['sync_kinds'] == ['light', 'curtain', 'camera', 'tv', 'speaker', 'fan']
     assert len(result['devices']) == 37
     assert sum(d['model_status'] == 'mapped' for d in result['devices']) == 27
     ac = next(d for d in result['devices'] if d['device_id'] == 'ac-living')

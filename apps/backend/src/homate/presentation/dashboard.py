@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 
 from homate.modules.home.application.devices import DeviceNotFoundError, InvalidDeviceActionError
 from homate.modules.home.domain.device import Device, DeviceActionRequest, DeviceActionResponse
@@ -23,8 +23,13 @@ def status():
 
 @router.get('/simulation')
 def simulation(service=Depends(get_household_service), user=Depends(get_current_user)):
-    return {'scene_id': 'casa', 'device_sync': False,
+    return {'scene_id': 'casa', 'device_sync': True, 'sync_kinds': ['light', 'curtain', 'camera', 'tv', 'speaker', 'fan'],
             'devices': service.load_simulation_catalog(user['home_id'])}
+
+
+@router.get('/devices/{identifier}/commands')
+def commands(identifier: str, request: Request, user=Depends(get_current_user)):
+    return request.app.state.device_gateway.repository.list(user['home_id'], identifier)
 
 
 @router.get("/devices", response_model=list[Device])
