@@ -12,7 +12,7 @@ HomeMate là ứng dụng quản lý nhà thông minh với giao diện web, bac
 - Trợ lý tra cứu, điều khiển thiết bị, quản lý kịch bản/lịch và tìm tài liệu. Backend tự thực hiện thao tác thường; thao tác nhạy cảm hoặc phạm vi lớn cần xác nhận theo [chính sách](docs/agent-workflow.md).
 - RAG service riêng quản lý tài liệu Markdown/TXT, embedding local và retrieval có nguồn cho chat/voice. Dùng cùng PostgreSQL nhưng schema/DB role riêng; nạp tài liệu qua CLI/API, chưa có trang quản lý. Xem [hướng dẫn RAG](docs/rag.md).
 
-Thiết bị hiện hoạt động ở chế độ mô phỏng; điện năng được ước tính từ trạng thái/công suất. Camera dùng dữ liệu minh họa. Kết nối phần cứng chưa triển khai; viewport 3D cần bản Unity WebGL phù hợp.
+Thiết bị hiện hoạt động qua Device Gateway với adapter Simulator; điện năng được ước tính từ trạng thái/công suất. Unity WebGL đồng bộ 27 object: đèn, rèm, TV, loa, camera và quạt hút bếp. Chọn Bật âm thanh để nghe playlist của loa. Camera dùng dữ liệu minh họa; kết nối phần cứng chưa triển khai. Xem [luồng điều khiển và mô phỏng 3D](docs/device-simulation.md).
 
 Aura trên header hỗ trợ STT/TTS local tiếng Việt bằng Sherpa-ONNX và Piper. Nhấn Aura để nói, nhấn lại để gửi; phản hồi được tự đọc và hiển thị cùng thẻ xác nhận trong header Aura. Trang Assistant dành cho chat văn bản. Micro cần HTTPS hoặc localhost; bản ghi tối đa 60 giây. Lần build Docker đầu tiên cần Internet để tải model, sau đó STT/TTS chạy local; LLM vẫn dùng provider đã cấu hình. Xem [hướng dẫn giọng nói](docs/voice.md).
 

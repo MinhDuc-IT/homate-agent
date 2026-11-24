@@ -165,7 +165,7 @@ Playwright cần backend cổng 8000 và Microsoft Edge. Cấu hình tự khởi
 
 ## Bản xem nhà 3D
 
-Source Unity nằm ở `apps/unity-sim`, scene gốc `Assets/Scenes/CASA.unity`. Màn hình `/house-3d` chỉ mở Unity khi có bản build hoàn tất. Bước này mới hiển thị mô hình, chưa đồng bộ thiết bị.
+Source Unity nằm ở `apps/unity-sim`, scene gốc `Assets/Scenes/CASA.unity`. Màn hình `/house-3d` chỉ mở Unity khi có bản build hoàn tất. Bản build mới đồng bộ trạng thái toàn bộ 27 object đã có mapping: đèn, rèm, TV, loa, camera và quạt hút bếp. Dùng Xem thiết bị để nhìn cận cảnh các hiệu ứng mới; chọn Bật âm thanh để nghe playlist khi loa bật. Xem [luồng điều khiển và mô phỏng](device-simulation.md).
 
 Thanh góc nhìn cho phép chuyển nhanh giữa toàn cảnh, phòng khách, phòng ngủ, phòng bếp và cửa vào. Các góc phòng lấy từ camera có sẵn trong scene. Trong phòng, kéo chuột để nhìn quanh tại chỗ và cuộn để đổi mức phóng đại; chọn Toàn cảnh để trở lại chế độ xoay quanh nhà. Nút chọn góc nhìn chỉ bật sau khi mô hình tải xong.
 
@@ -173,7 +173,7 @@ Danh mục demo lấy scene CASA làm chuẩn: 4 phòng (`living`, `bed`, `kitch
 
 Các thiết bị chưa có model: `ac-living`, `ac-bed`, `ac-office`, `heater-living`, `heater-bath`, `door`, `fan-bed`, `fan-bath`, `plug-kitchen`, `plug-office`. Không gán chúng vào object khác chỉ vì có tên hoặc vị trí gần giống.
 
-API có xác thực `GET /api/dashboard/simulation` trả về danh sách binding và trạng thái `mapped`/`unmapped`. `mapped` chỉ xác nhận đã xác định được object; `device_sync=false` nghĩa là chưa truyền trạng thái backend sang Unity. Binding giữ cả tên object và tham chiếu gốc (`game_object:<fileID>` hoặc `prefab_instance:<fileID>`) để phân biệt model camera với camera dùng để quan sát scene. Các tham chiếu này thuộc `Assets/Scenes/CASA.unity`, không phải ID của scene sinh ra khi build.
+API có xác thực `GET /api/dashboard/simulation` trả về danh sách binding và trạng thái `mapped`/`unmapped`. `mapped` xác nhận đã xác định được object; `sync_kinds` liệt kê nhóm có hỗ trợ đồng bộ (light, curtain, camera, tv, speaker, fan). Marker `build-status.json` xác định khả năng của bản WebGL đang phục vụ. Binding giữ cả tên object và tham chiếu gốc (`game_object:<fileID>` hoặc `prefab_instance:<fileID>`) để phân biệt model camera với camera dùng để quan sát scene. Các tham chiếu này thuộc `Assets/Scenes/CASA.unity`, không phải ID của scene sinh ra khi build.
 
 Migration `0006` chuyển thiết bị và số liệu điện năng của khu làm việc/ban công cũ về phòng khách, giữ ID, trạng thái, control, kịch bản và lịch. Một số tên demo được cập nhật theo nhóm đèn/camera trong scene; tên do người dùng tự đặt được giữ. Các ID cũ như `light-office`, `light-balcony`, `cam-balcony`, `ac-office`, `plug-office` vẫn được giữ để không làm đứt tham chiếu. Migration lưu snapshot trước thay đổi trong `homate.simulation_catalog_migrations` và chỉ hỗ trợ nâng cấp; muốn hoàn tác toàn bộ cần khôi phục bản sao lưu PostgreSQL trước migration. Không dùng `docker compose down -v` để cập nhật danh mục.
 
