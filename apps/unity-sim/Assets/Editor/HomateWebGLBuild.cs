@@ -13,7 +13,11 @@ public static class HomateWebGLBuild
     {
         public bool ready = true;
         public string scene = "HomePreview";
-        public bool deviceSync = false;
+        public bool deviceSync = true;
+        public string[] syncKinds = new[] { "light", "curtain", "camera", "tv", "speaker", "fan" };
+        public ViewOption[] focusDevices;
+        public string speakerId = "speaker-living";
+        public string[] speakerAudio;
         public ViewOption[] views;
     }
     [MenuItem("HomeMate/Build WebGL preview")]
@@ -88,6 +92,7 @@ public static class HomateWebGLBuild
         controller.SetRooms(rooms.ToArray());
         controller.Frame(bounds);
         if (roomNames.Count > 0) throw new Exception("Missing room cameras: " + string.Join(", ", roomNames.Keys));
+        var focusDevices = HomateDeviceBuild.Configure(scene, project);
         const string preview = "Assets/HomateGenerated/HomePreview.unity";
         if (!EditorSceneManager.SaveScene(scene, preview, true)) throw new Exception("Cannot save preview scene.");
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
@@ -103,8 +108,18 @@ public static class HomateWebGLBuild
         var html = File.ReadAllText(index).Replace("</head>",
             "<style>html,body{margin:0;width:100%;height:100%;overflow:hidden}#unity-container{position:fixed!important;inset:0!important;transform:none!important;width:100%!important;height:100%!important}#unity-canvas{width:100%!important;height:100%!important}#unity-footer{display:none}</style></head>");
         html = html.Replace(".then((unityInstance) => {", ".then((unityInstance) => { window.homateUnityInstance = unityInstance; window.dispatchEvent(new Event('homate-unity-ready'));");
-        html = html.Replace("</body>", "<script src=\"homate-bridge.js\"></script></body>");
-        var status = JsonUtility.ToJson(new BuildStatus { views = menu.ToArray() });
+        html = html.Replace("</body>", "<script src=\"speaker-audio.js\"></script><script src=\"homate-bridge.js\"></script></body>");
+        var tracks = Directory.GetFiles(Path.Combine(project, "Assets/AudioSource"), "*.mp3");
+        Array.Sort(tracks, StringComparer.Ordinal);
+        Directory.CreateDirectory(Path.Combine(output, "audio"));
+        var audioPaths = new List<string>();
+        for (int i = 0; i < tracks.Length; i++) {
+            string relative = "audio/track-" + (i + 1) + ".mp3";
+            File.Copy(tracks[i], Path.Combine(output, relative), true);
+            audioPaths.Add(relative);
+        }
+        File.Copy(Path.Combine(project, "WebGL/speaker-audio.js"), Path.Combine(output, "speaker-audio.js"), true);
+        var status = JsonUtility.ToJson(new BuildStatus { views = menu.ToArray(), focusDevices = focusDevices, speakerAudio = audioPaths.ToArray() });
         var bridge = File.ReadAllText(Path.Combine(project, "WebGL/bridge.js")).Replace("__HOMATE_BUILD_STATUS__", status);
         File.WriteAllText(Path.Combine(output, "homate-bridge.js"), bridge);
         File.WriteAllText(index, html);

@@ -28,3 +28,6 @@ apps/unity-sim/Assets/HomateGenerated.meta
 apps/web/public/unity/Build/
 apps/web/public/unity/build-status.json
 apps/web/public/unity/homate-bridge.js
+apps/web/public/unity/speaker-audio.js
+apps/web/public/unity/audio/
+apps/unity-sim/Assets/Resources/PerformanceTestRun*.json*

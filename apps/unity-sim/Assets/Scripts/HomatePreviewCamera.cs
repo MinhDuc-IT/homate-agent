@@ -94,6 +94,17 @@ public class HomatePreviewCamera : MonoBehaviour
         ApplyPose();
     }
 
+    public void Focus(Vector3 position, Vector3 lookAt)
+    {
+        insideRoom = true;
+        transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookAt - position));
+        yaw = transform.eulerAngles.y;
+        pitch = Mathf.DeltaAngle(0f, transform.eulerAngles.x);
+        var camera = GetComponent<Camera>();
+        camera.fieldOfView = 55f;
+        camera.nearClipPlane = 0.01f;
+    }
+
     void ApplyPose()
     {
         transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
