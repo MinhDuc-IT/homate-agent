@@ -1,26 +1,64 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/utils/cn'
+import { useDevices } from '@/context/DevicesContext'
 
 type ViewOption = { id: string; label: string }
 
 export function UnityViewport({ className }: { className?: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const { devices } = useDevices()
+  const [deviceSync, setDeviceSync] = useState(false)
   const [status, setStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const [attempt, setAttempt] = useState(0)
   const [views, setViews] = useState<ViewOption[]>([])
+  const [focusDevices, setFocusDevices] = useState<ViewOption[]>([])
+  const [focusedDevice, setFocusedDevice] = useState('')
+  const [hasAudio, setHasAudio] = useState(false)
+  const [audioEnabled, setAudioEnabled] = useState(false)
+  const [audioMessage, setAudioMessage] = useState('')
   const [runtimeReady, setRuntimeReady] = useState(false)
+  const [runtimeGeneration, setRuntimeGeneration] = useState(0)
   const [selectedView, setSelectedView] = useState('overview')
   useEffect(() => {
+    if (!runtimeReady || !deviceSync) return
+    // Full snapshots restore the latest state after load and WebSocket reconnect.
+    iframeRef.current?.contentWindow?.postMessage({
+      type: 'homate:device-snapshot',
+      devices: devices.filter(device => ['bulb', 'curtain', 'camera', 'tv', 'speaker', 'fan'].includes(device.kind)).map(device => ({
+        id: device.id,
+        power: device.state.power === true,
+        brightness: typeof device.state.brightness === 'number' ? device.state.brightness : 100,
+        position: typeof device.state.position === 'number' ? device.state.position : 0,
+        recording: device.state.recording === true,
+        volume: typeof device.state.volume === 'number' ? device.state.volume : 0,
+        speed: typeof device.state.speed === 'number' ? device.state.speed : 0,
+      })),
+    }, window.location.origin)
+  }, [devices, runtimeReady, deviceSync, runtimeGeneration])
+  useLayoutEffect(() => {
     function onMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin || event.source !== iframeRef.current?.contentWindow) return
-      if (event.data?.type === 'homate:ready') setRuntimeReady(true)
+      if (event.data?.type === 'homate:ready') {
+        setRuntimeReady(true)
+        setRuntimeGeneration(value => value + 1)
+        setAudioEnabled(false)
+      }
+      if (event.data?.type === 'homate:audio-state') {
+        setAudioEnabled(event.data.enabled === true)
+        setAudioMessage(event.data.failed ? 'Không tải được nhạc. Bạn thử bật lại nhé.' : event.data.blocked ? 'Bấm Bật âm thanh để cho phép phát nhạc.' : '')
+      }
+      if (event.data?.type === 'homate:device-focused' && focusDevices.some(device => device.id === event.data.deviceId)) {
+        setFocusedDevice(event.data.deviceId)
+        setSelectedView('')
+      }
       if (event.data?.type === 'homate:view-changed' && views.some(view => view.id === event.data.viewId)) {
         setSelectedView(event.data.viewId)
+        setFocusedDevice('')
       }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [views])
+  }, [views, focusDevices])
   useEffect(() => {
     const controller = new AbortController()
     fetch('/unity/build-status.json', { cache: 'no-store', signal: controller.signal })
@@ -32,6 +70,12 @@ export function UnityViewport({ className }: { className?: string }) {
             typeof view?.id === 'string' && /^[a-z-]{1,40}$/.test(view.id)
             && typeof view.label === 'string' && view.label.length <= 64) : [])
           setRuntimeReady(false)
+          setDeviceSync(info.deviceSync === true)
+          setFocusDevices(Array.isArray(info.focusDevices) ? info.focusDevices.filter((device: ViewOption) =>
+            typeof device?.id === 'string' && /^[a-z0-9-]{1,100}$/.test(device.id)
+            && typeof device.label === 'string' && device.label.length <= 100) : [])
+          setHasAudio(Array.isArray(info.speakerAudio) && info.speakerAudio.length > 0)
+          setAudioEnabled(false)
           setSelectedView('overview')
           setStatus(info.ready === true ? 'ready' : 'unavailable')
         }
@@ -43,7 +87,7 @@ export function UnityViewport({ className }: { className?: string }) {
     <section className={cn('relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[#101E19]', className)} aria-label="Mô hình nhà 3D">
       {status === 'ready' ? (
         <>
-          {views.length > 0 && <nav aria-label="Góc nhìn ngôi nhà" className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[#DCE6DF] bg-white p-3">
+          {(views.length > 0 || focusDevices.length > 0) && <nav aria-label="Góc nhìn ngôi nhà" className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[#DCE6DF] bg-white p-3">
             {views.map(view => <button key={view.id} type="button" disabled={!runtimeReady}
               aria-pressed={selectedView === view.id}
               onClick={() => iframeRef.current?.contentWindow?.postMessage({ type: 'homate:set-view', viewId: view.id }, window.location.origin)}
@@ -51,10 +95,25 @@ export function UnityViewport({ className }: { className?: string }) {
                 selectedView === view.id ? 'bg-[#1E4D38] text-white' : 'bg-[#EFF5F0] text-[#1E4D38] hover:bg-[#DDEBDF]')}>
               {view.label}
             </button>)}
+            {focusDevices.length > 0 && <select aria-label="Xem thiết bị" value={focusedDevice} disabled={!runtimeReady}
+              onChange={event => { if (event.target.value) iframeRef.current?.contentWindow?.postMessage({ type: 'homate:focus-device', deviceId: event.target.value }, window.location.origin) }}
+              className="max-w-56 shrink-0 rounded-lg border border-[#DCE6DF] bg-white px-3 py-2 text-sm text-[#1E4D38] disabled:opacity-50">
+              <option value="">Xem thiết bị…</option>
+              {focusDevices.map(device => <option key={device.id} value={device.id}>{devices.find(item => item.id === device.id)?.name ?? device.label}</option>)}
+            </select>}
+            {hasAudio && <button type="button" disabled={!runtimeReady} aria-pressed={audioEnabled}
+              onClick={() => {
+                const frame = iframeRef.current?.contentWindow as (Window & { homateSetAudioEnabled?: (enabled: boolean) => void }) | null
+                frame?.homateSetAudioEnabled?.(!audioEnabled)
+              }}
+              className="shrink-0 rounded-lg bg-[#EFF5F0] px-3 py-2 text-sm text-[#1E4D38] disabled:opacity-50">
+              {audioEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
+            </button>}
+            {audioMessage && <span role="status" className="text-xs text-[#66746A]">{audioMessage}</span>}
             {!runtimeReady && <span role="status" className="shrink-0 text-xs text-[#66746A]">Đang tải mô hình…</span>}
           </nav>}
           <div className="min-h-0 flex-1">
-            <iframe ref={iframeRef} title="Mô hình nhà 3D" src="/unity/index.html" className="h-full w-full border-0" allow="fullscreen; gamepad" allowFullScreen />
+            <iframe ref={iframeRef} title="Mô hình nhà 3D" src="/unity/index.html" onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'homate:request-ready' }, window.location.origin)} className="h-full w-full border-0" allow="fullscreen; gamepad; autoplay" allowFullScreen />
           </div>
         </>
       ) : (
