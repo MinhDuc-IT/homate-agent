@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 async def schedule_worker(service, manager):
     while True:
         try:
-            service.execute_due()
+            await asyncio.to_thread(service.execute_due)
             for event in service.drain_execution_events():
                 for device in event["devices"]:
                     await manager.broadcast_json({"type": "device.updated", "device_id": device["device_id"], "state": device["state"], "ts": event["finished_at"]})
@@ -25,7 +25,7 @@ async def energy_worker(service, devices, interval):
     last_day = None
     while True:
         try:
-            service.record_all(devices.list())
+            await asyncio.to_thread(lambda: service.record_all(devices.list()))
             today = datetime.now(timezone.utc).date()
             if today != last_day:
                 service.aggregate_daily_and_cleanup()
@@ -39,7 +39,7 @@ async def ambient_worker(service, devices, manager, settings):
         try:
             for room in service.load_rooms_ambient(HOME_ID):
                 minutes = vacant_minutes(room["occupancy_changed_at"])
-                identifiers = devices_on_in_room(devices, room["id"])
+                identifiers = await asyncio.to_thread(devices_on_in_room, devices, room["id"])
                 if room["occupied"] or minutes < settings.occupancy_vacant_minutes or not identifiers: continue
                 if cooldown_active(room["last_suggested_at"], settings.occupancy_cooldown_minutes): continue
                 message = f"{room['label']} đã trống {minutes} phút. Bạn có muốn tắt các thiết bị đang bật không?"

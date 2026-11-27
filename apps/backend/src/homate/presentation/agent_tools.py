@@ -1,5 +1,6 @@
 """Authenticated tools: only this backend may authorize and execute writes."""
 from uuid import UUID
+import asyncio
 from datetime import date
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -150,7 +151,7 @@ async def decide(identifier: UUID, body: Decision, request: Request, user=Depend
         return execute_tool(household, store, request.app.state.schedule_service, user, changed, tool, args)
 
     try:
-        receipt = request.app.state.agent_action_service.decide(user, str(identifier), body.approved, execute)
+        receipt = await asyncio.to_thread(request.app.state.agent_action_service.decide, user, str(identifier), body.approved, execute)
     except PermissionError as exc: raise HTTPException(403, str(exc)) from exc
     except LookupError as exc: raise HTTPException(404, str(exc)) from exc
     except (ValueError, DeviceNotFoundError, InvalidDeviceActionError) as exc: raise HTTPException(400, str(exc)) from exc

@@ -1,5 +1,6 @@
 """Authenticated conversation storage and explicit version-bound plan decisions."""
 from hashlib import sha256
+import asyncio
 from typing import Literal
 import json
 import jwt
@@ -229,7 +230,7 @@ async def commit(request_id: UUID, body: CommitTurn, request: Request, user=Depe
         result = service.repository.commit(user, str(request_id), body.state,
             response, body.invalidate, steps, body.summary, ttl, str(body.lease_id), auto_execute=auto)
         claimed = result.pop('_claimed_plan', None)
-        receipt = service.execute_claimed(claimed, *execution_callbacks(request.app, user, changed)) if claimed else None
+        receipt = await asyncio.to_thread(service.execute_claimed, claimed, *execution_callbacks(request.app, user, changed)) if claimed else None
         return refresh_auto_response(request, user, request_id, result, receipt)
     except (ValueError, LookupError, PermissionError) as error:
         raise handle_error(error) from None
@@ -277,7 +278,7 @@ async def decide(identifier: UUID, body: PlanDecision, request: Request, user=De
     preflight, run = execution_callbacks(app, user, changed)
 
     try:
-        return app.state.agent_workflow_service.decide(user, str(identifier), body.version,
+        return await asyncio.to_thread(app.state.agent_workflow_service.decide, user, str(identifier), body.version,
                                                       body.approved, preflight, run)
     except (ValueError, LookupError, PermissionError) as error:
         raise handle_error(error) from None

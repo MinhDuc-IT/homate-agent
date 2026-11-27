@@ -45,7 +45,7 @@ def device(identifier: str, store=Depends(get_device_store), user=Depends(get_cu
 
 @router.post("/devices/{identifier}/actions", response_model=DeviceActionResponse)
 async def action(identifier: str, body: DeviceActionRequest, store=Depends(get_device_store), manager=Depends(get_ws_manager), service=Depends(get_household_service), user=Depends(get_current_user)):
-    try: result = store.apply_action(identifier, body.key, body.value)
+    try: result = await asyncio.to_thread(store.apply_action, identifier, body.key, body.value)
     except DeviceNotFoundError as error: raise HTTPException(404, str(error)) from error
     except InvalidDeviceActionError as error: raise HTTPException(400, str(error)) from error
     await notify_device_updated(manager, result.device)
@@ -65,7 +65,8 @@ async def device_socket(socket: WebSocket):
     manager = socket.app.state.ws_manager
     await manager.connect(socket)
     try:
-        await manager.send_json(socket, {"type": "snapshot", "devices": [d.model_dump(mode="json") for d in socket.app.state.device_store.list()]})
+        snapshot = await asyncio.to_thread(socket.app.state.device_store.list)
+        await manager.send_json(socket, {"type": "snapshot", "devices": [d.model_dump(mode="json") for d in snapshot]})
         while True:
             try:
                 message = await asyncio.wait_for(socket.receive_json(), timeout=30)

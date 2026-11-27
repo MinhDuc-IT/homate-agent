@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+import asyncio
 
 from homate.application.household import HOME_ID
 from homate.modules.home.application.pending import pending_ambient
@@ -18,7 +19,7 @@ async def execute_ambient_decision(request_id, approved, *, db_path, store, ws_m
         if device.room != pending.room_id or device.state.get("power") is not True: continue
         action = resolve_turn_on_off(device, "turn_off")
         if action:
-            result = store.apply_action(identifier, *action)
+            result = await asyncio.to_thread(store.apply_action, identifier, *action)
             await notify_device_updated(ws_manager, result.device)
             executed.append(identifier)
     return {"ok": True, "status": "executed", "executed": bool(executed), "device_ids": executed}
