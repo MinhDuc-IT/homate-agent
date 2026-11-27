@@ -50,16 +50,30 @@ public static class HomateDeviceBuild
             if (source.binding_kind != "light" && source.binding_kind != "curtain")
             {
                 HomateDeviceEffectsBuild.Configure(binding, center);
-                focusOptions.Add(new HomateWebGLBuild.ViewOption {
-                    id = source.device_id, label = catalog.devices.Single(d => d.id == source.device_id).name
-                });
             }
+            else {
+                var renderers = target.GetComponentsInChildren<Renderer>(true);
+                var bounds = renderers.Length > 0 ? renderers[0].bounds : new Bounds(target.transform.position, Vector3.one * 0.2f);
+                foreach (var renderer in renderers) bounds.Encapsulate(renderer.bounds);
+                binding.focusTarget = bounds.center;
+                var direction = (center - bounds.center).normalized;
+                if (direction.sqrMagnitude < 0.1f) direction = Vector3.forward;
+                binding.focusPosition = bounds.center + direction * Mathf.Max(bounds.size.magnitude * 1.2f, 0.7f);
+            }
+            foreach (var mesh in target.GetComponentsInChildren<MeshFilter>(true)) {
+                if (mesh.sharedMesh == null || mesh.GetComponent<Collider>() != null) continue;
+                mesh.gameObject.AddComponent<MeshCollider>().sharedMesh = mesh.sharedMesh;
+            }
+            focusOptions.Add(new HomateWebGLBuild.ViewOption {
+                id = source.device_id, label = catalog.devices.Single(d => d.id == source.device_id).name
+            });
             foreach (var light in target.GetComponentsInChildren<Light>(true)) light.lightmapBakeType = LightmapBakeType.Realtime;
             bindings.Add(binding);
         }
         if (bindings.Count != 27) throw new Exception("Expected 27 verified model bindings.");
         var controller = new GameObject("HomeMateDevices").AddComponent<HomateDeviceSimulation>();
         controller.bindings = bindings.ToArray();
+        controller.gameObject.AddComponent<HomateDevicePicker>().simulation = controller;
         AssetDatabase.SaveAssets();
         return focusOptions.ToArray();
     }
