@@ -6,7 +6,7 @@
 Giao diện / agent / lịch / kịch bản
   → DeviceStore: kiểm tra control, giá trị, điều kiện và conflict
   → DeviceGateway: chọn adapter theo device_connections
-  → SimulatorAdapter: thực hiện và trả trạng thái xác nhận
+  → SimulatorAdapter hoặc MQTT → broker → thiết bị giả lập → phản hồi trạng thái
   → PostgreSQL: lưu reported state và receipt thành công trong cùng transaction
   → DeviceStore + WebSocket
   → DevicesContext → Unity bridge → mô hình đèn/rèm
@@ -18,14 +18,14 @@ Giao diện / agent / lịch / kịch bản
 
 Migration `0007` thêm:
 
-- `homate.device_connections`: adapter và settings của từng thiết bị. Thiết bị demo hiện dùng `simulator`.
+- `homate.device_connections`: adapter và settings của từng thiết bị, được quản lý trực tiếp trong DB. Backend không tự thay đổi kết nối hiện có khi khởi động; thiết bị chưa có kết nối được tạo với adapter `simulator`.
 - `homate.device_commands`: desired state, reported state, adapter, thời điểm và kết quả của từng lần dispatch.
 
 Trạng thái lệnh: `processing`, `succeeded`, `failed`, `interrupted`. Khi backend khởi động lại, lệnh còn processing được đánh dấu interrupted; không tự gửi lại. API có xác thực `GET /api/dashboard/devices/{id}/commands` trả 20 lệnh gần nhất trong nhà của người dùng.
 
 Simulator hiện phản hồi tức thì. Chỉ sau khi trạng thái được xác nhận và lưu thành công, bộ nhớ và giao diện mới được cập nhật. Adapter không tồn tại hoặc báo trạng thái khác yêu cầu sẽ làm lệnh thất bại, giữ nguyên trạng thái thiết bị. `set_state` dành cho báo cáo trạng thái, không dispatch lại lệnh để tránh vòng lặp.
 
-Gateway hiện chạy đồng bộ trong backend, cùng giới hạn một process với DeviceStore. Chưa có adapter MQTT/HTTP, hàng đợi, timeout thiết bị thật, retry, cấu hình mất mạng hay mô phỏng nhiệt độ phòng. Khi bổ sung thiết bị thật, cần worker nhận report bất đồng bộ và hoàn tất lệnh theo report; publish MQTT thành công chưa phải thiết bị thực hiện thành công.
+Gateway chờ phản hồi thiết bị trong worker thread; MQTT có network thread riêng và task đối soát báo cáo để không tạo vòng lặp lệnh. Có timeout, kết nối lại và chống chạy lặp ở thiết bị giả lập. Backend vẫn giới hạn một process với DeviceStore; chưa có điều phối nhiều backend, adapter giao thức hãng cụ thể, tự retry lệnh hay mô phỏng nhiệt độ phòng. Publish MQTT thành công chưa phải thiết bị thực hiện thành công.
 
 ## Unity WebGL
 
@@ -64,3 +64,7 @@ Bấm vào thiết bị trong mô hình để chọn. Thiết bị được đá
 Các nút dùng chung API thiết bị và Device Gateway với giao diện điều khiển thông thường. Mô hình chỉ cập nhật hiệu ứng theo trạng thái backend trả về; chọn thiết bị không tự thay đổi trạng thái.
 
 Cuộn chuột hoặc dùng nút **+ / −** để phóng to, thu nhỏ. Ở toàn cảnh, camera tiến gần hoặc lùi khỏi tâm ngôi nhà; trong phòng, camera di chuyển tiến/lùi theo hướng đang nhìn. Kéo chuột trái để xoay, kéo chuột phải để dịch chuyển góc nhìn. Chọn lại phòng hoặc **Toàn cảnh** để trở về vị trí mặc định.
+
+## MQTT giả lập độc lập
+
+Trong Compose, container `device-simulator` có thể thực thi lệnh cho đèn phòng khách 1 qua broker `mqtt` khi adapter của đèn trong DB là `mqtt`. Unity vẫn chỉ nhận trạng thái backend đã báo cáo. Công tắc vật lý giả lập phát MQTT state để cập nhật backend và mô hình; khi adapter là `simulator`, báo cáo MQTT của đèn bị bỏ qua. Xem [hướng dẫn và kịch bản MQTT](mqtt-simulation.md).

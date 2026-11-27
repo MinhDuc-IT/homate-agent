@@ -39,6 +39,8 @@ Chỉ điền key chưa đủ: `LLM_PROVIDER` phải chọn đúng provider. Mod
 
 STT/TTS tiếng Việt chạy local bằng `speech-service`, được khởi động cùng Compose. Khi phát triển local, chạy thêm service ở port 9020 theo [hướng dẫn giọng nói](voice.md).
 
+Compose cũng chạy broker `mqtt` và `device-simulator`. Chọn adapter `mqtt` cho đèn phòng khách 1 trong bảng `homate.device_connections` để thử giao tiếp MQTT; backend không tự thay đổi adapter lúc khởi động. Có thể mô phỏng công tắc vật lý bằng `docker compose exec device-simulator python control.py light-living power true`. Xem [hướng dẫn MQTT](mqtt-simulation.md) để cấu hình DB và thử timeout, phản hồi chậm, mất kết nối.
+
 Cần Docker Desktop với Linux containers. Dừng các server local chiếm cổng 5173, 8000 hoặc 8010 trước khi chạy cùng bộ dịch vụ bằng Docker.
 
 ```powershell
