@@ -1,5 +1,30 @@
 name: homate
 services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt_data:/mosquitto/data
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "127.0.0.1", "-t", "homate/health", "-m", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  device-simulator:
+    build: ./apps/device-simulator
+    environment:
+      MQTT_HOST: mqtt
+      MQTT_SIMULATED_DEVICE_IDS: ${MQTT_SIMULATED_DEVICE_IDS:-light-living}
+    volumes: ["mqtt_device_data:/data"]
+    ports: ["127.0.0.1:${DEVICE_SIMULATOR_PORT:-9040}:9040"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9040/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      mqtt:
+        condition: service_healthy
   db:
     image: pgvector/pgvector:0.8.0-pg17
     environment:
@@ -20,6 +45,9 @@ services:
       APP_ENV: ${APP_ENV:-development}
       JWT_SECRET: ${JWT_SECRET:-homate-development-change-this-secret-before-production}
       WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      MQTT_COMMAND_TIMEOUT_SECONDS: ${MQTT_COMMAND_TIMEOUT_SECONDS:-5}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 5s
@@ -29,6 +57,8 @@ services:
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       db:
+        condition: service_healthy
+      mqtt:
         condition: service_healthy
   ai-service:
     build: ./apps/ai-service
@@ -77,3 +107,5 @@ services:
 volumes:
   postgres_data:
   knowledge_files:
+  mqtt_data:
+  mqtt_device_data:
