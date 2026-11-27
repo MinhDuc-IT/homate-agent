@@ -1,5 +1,50 @@
 import { test, expect } from '@playwright/test'
 
+test('selecting a model exposes real device controls and sends actions through the device API', async ({ page }) => {
+  test.setTimeout(60000)
+  let power = false
+  const commands: unknown[] = []
+  const device = () => ({ id: 'tv-living', name: 'TV phòng khách', room: 'living', kind: 'tv', state: { power },
+    controls: [{ type: 'toggle', key: 'power', label: 'Nguồn' }] })
+  await page.route('**/api/dashboard/devices', route => route.fulfill({ json: [device()] }))
+  await page.routeWebSocket('**/ws/devices?*', socket => socket.send(JSON.stringify({ type: 'snapshot', devices: [device()] })))
+  await page.route('**/api/dashboard/devices/tv-living/actions', route => {
+    const body = route.request().postDataJSON()
+    commands.push(body)
+    power = body.value
+    return route.fulfill({ json: { device: device(), changed_key: 'power', previous_value: !power, new_value: power } })
+  })
+  await page.route('**/unity/build-status.json', route => route.fulfill({ json: { ready: true, deviceSync: true, views: [],
+    focusDevices: [{ id: 'tv-living', label: 'TV phòng khách' }] } }))
+  await page.route('**/unity/index.html', route => route.fulfill({ contentType: 'text/html', body: `
+    <button onclick="parent.postMessage({type:'homate:device-selected',deviceId:'tv-living'},location.origin)">Pick TV</button>
+    <pre id="zoom"></pre><script>addEventListener('message', e => {
+      if(e.data.type==='homate:request-ready') parent.postMessage({type:'homate:ready'},location.origin);
+      if(e.data.type==='homate:zoom') document.querySelector('#zoom').textContent=e.data.direction;
+    });</script>` }))
+  await page.goto('/login')
+  await page.getByRole('button', { name: /Minh Đức/ }).click()
+  await page.getByPlaceholder('••••').fill('1234')
+  await page.getByRole('button', { name: /Đăng nhập vào không gian sống/ }).click()
+  await expect(page).toHaveURL(/dashboard/)
+  await page.goto('/house-3d')
+  const panel = page.getByRole('complementary', { name: 'Điều khiển thiết bị 3D' })
+  await page.evaluate(() => window.postMessage({ type: 'homate:device-selected', deviceId: 'tv-living' }, location.origin))
+  await expect(panel).toHaveCount(0)
+  await page.frameLocator('iframe').getByRole('button', { name: 'Pick TV' }).click()
+  await expect(panel.getByRole('heading', { name: 'TV phòng khách' })).toBeVisible()
+  await panel.getByRole('button', { name: 'Nguồn', exact: true }).click()
+  await expect.poll(() => commands.length).toBe(1)
+  await expect(panel.locator('fieldset')).toHaveAttribute('aria-busy', 'false')
+  expect(commands).toEqual([{ key: 'power', value: true }])
+  await page.getByRole('button', { name: 'Phóng to', exact: true }).click()
+  await expect(page.frameLocator('iframe').locator('#zoom')).toHaveText('in')
+  await page.getByRole('button', { name: 'Thu nhỏ', exact: true }).click()
+  await expect(page.frameLocator('iframe').locator('#zoom')).toHaveText('out')
+  await page.getByRole('button', { name: 'Đóng điều khiển thiết bị' }).click()
+  await expect(panel).toHaveCount(0)
+})
+
 test('3D screen handles a missing build and retries when a build is ready', async ({ page }) => {
   let ready = false
   await page.route('**/unity/build-status.json', route => ready

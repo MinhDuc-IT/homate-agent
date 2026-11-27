@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/utils/cn'
 import { useDevices } from '@/context/DevicesContext'
+import { SimulationDevicePanel } from '@/components/homemind/SimulationDevicePanel'
 
 type ViewOption = { id: string; label: string }
 
@@ -13,6 +14,14 @@ export function UnityViewport({ className }: { className?: string }) {
   const [views, setViews] = useState<ViewOption[]>([])
   const [focusDevices, setFocusDevices] = useState<ViewOption[]>([])
   const [focusedDevice, setFocusedDevice] = useState('')
+  const [selectedDeviceId, setSelectedDeviceId] = useState('')
+  const selectedDevice = devices.find(device => device.id === selectedDeviceId)
+  function selectDevice(id: string) {
+    setSelectedDeviceId(id)
+    if (!id) setFocusedDevice('')
+    iframeRef.current?.contentWindow?.postMessage({ type: 'homate:select-device', deviceId: id }, window.location.origin)
+    iframeRef.current?.contentWindow?.focus()
+  }
   const [hasAudio, setHasAudio] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
   const [audioMessage, setAudioMessage] = useState('')
@@ -42,6 +51,7 @@ export function UnityViewport({ className }: { className?: string }) {
         setRuntimeReady(true)
         setRuntimeGeneration(value => value + 1)
         setAudioEnabled(false)
+        setSelectedDeviceId('')
       }
       if (event.data?.type === 'homate:audio-state') {
         setAudioEnabled(event.data.enabled === true)
@@ -50,10 +60,15 @@ export function UnityViewport({ className }: { className?: string }) {
       if (event.data?.type === 'homate:device-focused' && focusDevices.some(device => device.id === event.data.deviceId)) {
         setFocusedDevice(event.data.deviceId)
         setSelectedView('')
+        selectDevice(event.data.deviceId)
+      }
+      if (event.data?.type === 'homate:device-selected' && (event.data.deviceId === '' || focusDevices.some(device => device.id === event.data.deviceId))) {
+        setSelectedDeviceId(event.data.deviceId)
       }
       if (event.data?.type === 'homate:view-changed' && views.some(view => view.id === event.data.viewId)) {
         setSelectedView(event.data.viewId)
         setFocusedDevice('')
+        selectDevice('')
       }
     }
     window.addEventListener('message', onMessage)
@@ -90,13 +105,19 @@ export function UnityViewport({ className }: { className?: string }) {
           {(views.length > 0 || focusDevices.length > 0) && <nav aria-label="Góc nhìn ngôi nhà" className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[#DCE6DF] bg-white p-3">
             {views.map(view => <button key={view.id} type="button" disabled={!runtimeReady}
               aria-pressed={selectedView === view.id}
-              onClick={() => iframeRef.current?.contentWindow?.postMessage({ type: 'homate:set-view', viewId: view.id }, window.location.origin)}
+              onClick={() => {
+                iframeRef.current?.contentWindow?.postMessage({ type: 'homate:set-view', viewId: view.id }, window.location.origin)
+                iframeRef.current?.contentWindow?.focus()
+              }}
               className={cn('shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:cursor-wait disabled:opacity-50',
                 selectedView === view.id ? 'bg-[#1E4D38] text-white' : 'bg-[#EFF5F0] text-[#1E4D38] hover:bg-[#DDEBDF]')}>
               {view.label}
             </button>)}
             {focusDevices.length > 0 && <select aria-label="Xem thiết bị" value={focusedDevice} disabled={!runtimeReady}
-              onChange={event => { if (event.target.value) iframeRef.current?.contentWindow?.postMessage({ type: 'homate:focus-device', deviceId: event.target.value }, window.location.origin) }}
+              onChange={event => { if (event.target.value) {
+                iframeRef.current?.contentWindow?.postMessage({ type: 'homate:focus-device', deviceId: event.target.value }, window.location.origin)
+                iframeRef.current?.contentWindow?.focus()
+              } }}
               className="max-w-56 shrink-0 rounded-lg border border-[#DCE6DF] bg-white px-3 py-2 text-sm text-[#1E4D38] disabled:opacity-50">
               <option value="">Xem thiết bị…</option>
               {focusDevices.map(device => <option key={device.id} value={device.id}>{devices.find(item => item.id === device.id)?.name ?? device.label}</option>)}
@@ -112,8 +133,22 @@ export function UnityViewport({ className }: { className?: string }) {
             {audioMessage && <span role="status" className="text-xs text-[#66746A]">{audioMessage}</span>}
             {!runtimeReady && <span role="status" className="shrink-0 text-xs text-[#66746A]">Đang tải mô hình…</span>}
           </nav>}
-          <div className="min-h-0 flex-1">
+          <div className="border-b border-white/10 px-3 py-2 text-xs text-white/75">Bấm thiết bị để điều khiển · Kéo chuột trái để xoay · Chuột phải để dịch chuyển · Cuộn để tiến/lùi</div>
+          <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          <div className="relative min-h-64 min-w-0 flex-1">
             <iframe ref={iframeRef} title="Mô hình nhà 3D" src="/unity/index.html" onLoad={() => iframeRef.current?.contentWindow?.postMessage({ type: 'homate:request-ready' }, window.location.origin)} className="h-full w-full border-0" allow="fullscreen; gamepad; autoplay" allowFullScreen />
+            <div className="absolute bottom-3 left-3 flex gap-1 rounded-xl bg-white p-1 shadow-lg" aria-label="Thu phóng mô hình">
+              {(['in', 'out'] as const).map(direction => <button key={direction} type="button" disabled={!runtimeReady}
+                aria-label={direction === 'in' ? 'Phóng to' : 'Thu nhỏ'}
+                onClick={() => {
+                  iframeRef.current?.contentWindow?.postMessage({ type: 'homate:zoom', direction }, window.location.origin)
+                  iframeRef.current?.contentWindow?.focus()
+                }}
+                className="h-10 w-10 rounded-lg text-2xl text-[#1E4D38] hover:bg-[#EFF5F0] disabled:opacity-40">{direction === 'in' ? '+' : '−'}</button>)}
+            </div>
+          </div>
+          {selectedDevice && <SimulationDevicePanel key={selectedDevice.id} device={selectedDevice} onClose={() => selectDevice('')}
+            onApplied={() => iframeRef.current?.contentWindow?.focus()} />}
           </div>
         </>
       ) : (
