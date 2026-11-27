@@ -22,6 +22,8 @@ public class HomatePreviewCamera : MonoBehaviour
     Vector3 overviewTarget;
     float overviewDistance;
     bool insideRoom;
+    Vector2 previousPointer;
+    bool dragging;
 
     public void SetRooms(RoomView[] views) { rooms = views; }
 
@@ -29,7 +31,7 @@ public class HomatePreviewCamera : MonoBehaviour
     {
         target = bounds.center;
         var size = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z, 1f);
-        minimumDistance = size * 0.15f;
+        minimumDistance = 0.3f;
         maximumDistance = size * 4f;
         distance = size * 1.6f;
         overviewTarget = target;
@@ -77,21 +79,39 @@ public class HomatePreviewCamera : MonoBehaviour
     {
         var mouse = Mouse.current;
         if (mouse == null) return;
+        var pointer = mouse.position.ReadValue();
+        var delta = dragging ? pointer - previousPointer : Vector2.zero;
+        previousPointer = pointer;
+        dragging = mouse.leftButton.isPressed || mouse.rightButton.isPressed;
+        if (!Application.isFocused || pointer.x < 0 || pointer.y < 0 || pointer.x > Screen.width || pointer.y > Screen.height) { dragging = false; return; }
+        if (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame) delta = Vector2.zero;
         if (mouse.leftButton.isPressed)
         {
-            var delta = mouse.delta.ReadValue();
             yaw += delta.x * 0.2f;
             pitch = Mathf.Clamp(pitch - delta.y * 0.2f, insideRoom ? -80f : 10f, 85f);
         }
         if (insideRoom)
         {
             if (mouse.leftButton.isPressed) transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
-            var camera = GetComponent<Camera>();
-            camera.fieldOfView = Mathf.Clamp(camera.fieldOfView - mouse.scroll.ReadValue().y * 0.03f, 30f, 95f);
+            if (mouse.rightButton.isPressed)
+                transform.position += (-transform.right * delta.x - transform.up * delta.y) * 0.005f;
             return;
         }
-        distance = Mathf.Clamp(distance * Mathf.Exp(-mouse.scroll.ReadValue().y * 0.001f), minimumDistance, maximumDistance);
+        if (mouse.rightButton.isPressed)
+            target += (-transform.right * delta.x - transform.up * delta.y) * distance * 0.001f;
         ApplyPose();
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public void Zoom(string direction) { ZoomAmount(direction == "in" ? 1f : -1f); }
+
+    void ZoomAmount(float steps)
+    {
+        if (insideRoom) transform.position += transform.forward * (steps * 0.4f);
+        else {
+            distance = Mathf.Clamp(distance * Mathf.Pow(0.8f, steps), minimumDistance, maximumDistance);
+            ApplyPose();
+        }
     }
 
     public void Focus(Vector3 position, Vector3 lookAt)
