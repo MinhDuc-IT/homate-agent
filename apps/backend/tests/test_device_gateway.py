@@ -82,3 +82,27 @@ def test_restart_interrupts_unfinished_commands_without_replaying(client):
         row = conn.execute('SELECT status FROM device_commands WHERE id=%s', (identifier,)).fetchone()
     assert row['status'] == 'interrupted'
     assert client.app.state.device_store.get('light-living') == original
+
+
+def test_startup_preserves_database_adapter_settings(client, monkeypatch):
+    from fastapi.testclient import TestClient
+    from homate.software_bootstrap import create_app
+    from homate.config import get_settings
+
+    repository = PostgresCommandRepository(client.app.state.database_url)
+    original = {identifier: repository.connection(identifier) for identifier in ('light-living', 'light-balcony')}
+    try:
+        with connect(client.app.state.database_url) as conn:
+            conn.execute("UPDATE device_connections SET adapter='simulator',settings='{}' WHERE device_id='light-living'")
+            conn.execute("""UPDATE device_connections SET adapter='mqtt',settings='{"managed_by":"mqtt-demo"}' WHERE device_id='light-balcony'""")
+        configuration = get_settings().model_copy(update={'mqtt_host': ''})
+        monkeypatch.setattr('homate.software_bootstrap.get_settings', lambda: configuration)
+        # Old demo environment variables must not select or reset adapters.
+        monkeypatch.setenv('MQTT_SIMULATED_DEVICE_IDS', 'light-living')
+        with TestClient(create_app(client.app.state.database_url, start_workers=False)):
+            assert repository.connection('light-living') == ('simulator', {})
+            assert repository.connection('light-balcony') == ('mqtt', {'managed_by': 'mqtt-demo'})
+    finally:
+        with connect(client.app.state.database_url) as conn:
+            for identifier, (adapter, settings) in original.items():
+                conn.execute('UPDATE device_connections SET adapter=%s,settings=%s WHERE device_id=%s', (adapter, json.dumps(settings), identifier))

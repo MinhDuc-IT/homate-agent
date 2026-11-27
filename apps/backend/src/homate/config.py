@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     occupancy_cooldown_minutes: int = 30
     occupancy_watchdog_interval_seconds: int = 15
     energy_sampler_interval_seconds: int = 60
+    mqtt_host: str = ""
+    mqtt_port: int = Field(default=1883, ge=1, le=65535)
+    mqtt_command_timeout_seconds: float = Field(default=5, ge=0.2, le=30)
 
     @model_validator(mode="after")
     def require_production_secret(self):

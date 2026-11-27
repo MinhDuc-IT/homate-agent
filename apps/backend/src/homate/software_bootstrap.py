@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import queue
 from contextlib import asynccontextmanager, suppress
 
 import psycopg
@@ -20,7 +21,8 @@ from homate.infrastructure.postgres.connection import connect
 from homate.infrastructure.postgres.repository import PostgresHouseholdRepository
 from homate.infrastructure.postgres.energy import EnergyService as PostgresEnergy
 from homate.infrastructure.postgres.schedules import ScheduleService as PostgresSchedules
-from homate.infrastructure.realtime import ConnectionManager, pending_hitl
+from homate.infrastructure.realtime import ConnectionManager, pending_hitl, notify_device_updated
+from homate.infrastructure.mqtt import MqttTransport
 from homate.infrastructure.weather import WeatherCache
 from homate.modules.home.application.devices import DeviceStore
 from homate.modules.home.application.gateway import DeviceGateway, SimulatorAdapter, DeviceTransportError
@@ -48,7 +50,12 @@ def create_app(database_url=None, *, start_workers=True):
 
         commands = PostgresCommandRepository(database_url)
         commands.recover()
-        gateway = DeviceGateway(commands, {'simulator': SimulatorAdapter()})
+        initial_devices = household.load_devices(database_url)
+        # Listen for known devices so DB adapter changes take effect without a
+        # restart. Only devices currently configured as MQTT may update state.
+        transport = MqttTransport(configuration.mqtt_host, configuration.mqtt_port,
+            initial_devices, configuration.mqtt_command_timeout_seconds) if configuration.mqtt_host else None
+        gateway = DeviceGateway(commands, {'simulator': SimulatorAdapter(), **({'mqtt': transport} if transport else {})})
 
         def dispatch(device):
             reported = gateway.execute(device)
@@ -56,7 +63,7 @@ def create_app(database_url=None, *, start_workers=True):
             except Exception: logging.getLogger(__name__).exception('Energy sample failed after command')
             return reported
 
-        store = DeviceStore(household.load_devices(database_url), on_change=persist,
+        store = DeviceStore(initial_devices, on_change=persist,
             conflict_rules=lambda: household.load_device_conflicts(database_url), on_command=dispatch)
         manager = ConnectionManager()
         scheduler = ScheduleService(PostgresSchedules(database_url, store), service, store)
@@ -74,13 +81,32 @@ def create_app(database_url=None, *, start_workers=True):
         pending_hitl.set_ttl_seconds(service.get_home_settings(HOME_ID)["hitl_timeout_seconds"])
         meter.record_all(store.list())
         tasks = []
+        async def reconcile_reports():
+            while True:
+                try:
+                    report = transport.reports.get_nowait()
+                except queue.Empty:
+                    await asyncio.sleep(0.1)
+                    continue
+                try:
+                    updated = await asyncio.to_thread(store.set_state, report['device_id'], report['state'],
+                        accept_if=lambda: commands.connection(report['device_id'])[0] == 'mqtt' and transport.is_current(report))
+                    if updated:
+                        await notify_device_updated(manager, updated)
+                except Exception:
+                    logging.getLogger(__name__).exception('MQTT report reconciliation failed')
+        if transport:
+            transport.start()
+            tasks.append(asyncio.create_task(reconcile_reports()))
         if start_workers:
-            tasks = [asyncio.create_task(schedule_worker(scheduler, manager)), asyncio.create_task(energy_worker(meter, store, configuration.energy_sampler_interval_seconds)), asyncio.create_task(ambient_worker(service, store, manager, configuration))]
+            tasks += [asyncio.create_task(schedule_worker(scheduler, manager)), asyncio.create_task(energy_worker(meter, store, configuration.energy_sampler_interval_seconds)), asyncio.create_task(ambient_worker(service, store, manager, configuration))]
         try: yield
         finally:
             for task in tasks: task.cancel()
             for task in tasks:
                 with suppress(asyncio.CancelledError): await task
+            if transport:
+                await asyncio.to_thread(transport.stop)
 
     app = FastAPI(title="HomeMate Software API", version="0.2.0", lifespan=lifespan)
     app.add_middleware(CORSMiddleware, allow_origins=configuration.cors_origins.split(","), allow_credentials=True, allow_methods=["*"], allow_headers=["*"])

@@ -40,7 +40,7 @@ class DeviceGateway:
         try:
             if adapter is None:
                 raise DeviceTransportError('unsupported_transport')
-            reported = adapter.execute(desired.model_copy(deep=True), settings)
+            reported = adapter.execute(desired.model_copy(deep=True), {**settings, '_command_id': identifier})
             if reported.id != desired.id or reported.state != desired.state:
                 raise DeviceTransportError('state_not_acknowledged')
             # State and success receipt commit together. Never publish before this.

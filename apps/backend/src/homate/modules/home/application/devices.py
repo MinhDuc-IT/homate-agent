@@ -92,9 +92,11 @@ class DeviceStore:
                 raise DeviceNotFoundError(device_id)
             return device.model_copy(deep=True)
 
-    def set_state(self, device_id: str, state: dict) -> Device | None:
+    def set_state(self, device_id: str, state: dict, *, accept_if: Callable[[], bool] | None = None) -> Device | None:
         """Merge device state keys. Returns None if nothing changed."""
         with self._lock:
+            if accept_if is not None and not accept_if():
+                return None
             device = self._devices.get(device_id)
             if device is None:
                 raise DeviceNotFoundError(device_id)
