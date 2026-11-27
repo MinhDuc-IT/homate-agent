@@ -57,3 +57,10 @@ docker compose up -d --build --no-deps web
 ```
 
 Mở Nhà 3D, chọn góc nhìn phù hợp rồi điều khiển thiết bị từ giao diện hoặc agent. Có thể mở trang Thiết bị cạnh mô hình để dễ quan sát. Thử bật/tắt TV, đổi trạng thái ghi hình camera, bật loa và đổi volume, đổi cấp quạt hút; tải lại trang vẫn lấy đúng trạng thái backend. Các lệnh tương ứng từ agent và lịch đi qua cùng Gateway.
+# Điều khiển trực tiếp trong mô hình
+
+Bấm vào thiết bị trong mô hình để chọn. Thiết bị được đánh dấu bằng khung xanh; bảng bên cạnh hiển thị tên, trạng thái và các điều khiển hỗ trợ. Có thể chọn nhanh cả 27 thiết bị đã ánh xạ bằng danh sách **Xem thiết bị**. Bấm vùng trống hoặc nút đóng để bỏ chọn. Kéo để xoay sẽ không được tính là bấm chọn.
+
+Các nút dùng chung API thiết bị và Device Gateway với giao diện điều khiển thông thường. Mô hình chỉ cập nhật hiệu ứng theo trạng thái backend trả về; chọn thiết bị không tự thay đổi trạng thái.
+
+Cuộn chuột hoặc dùng nút **+ / −** để phóng to, thu nhỏ. Ở toàn cảnh, camera tiến gần hoặc lùi khỏi tâm ngôi nhà; trong phòng, camera di chuyển tiến/lùi theo hướng đang nhìn. Kéo chuột trái để xoay, kéo chuột phải để dịch chuyển góc nhìn. Chọn lại phòng hoặc **Toàn cảnh** để trở về vị trí mặc định.
