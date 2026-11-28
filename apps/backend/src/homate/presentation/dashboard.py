@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from homate.modules.home.application.devices import DeviceNotFoundError, InvalidDeviceActionError
 from homate.modules.home.domain.device import Device, DeviceActionRequest, DeviceActionResponse
 from homate.infrastructure.realtime import notify_device_updated
+from homate.infrastructure.postgres.connection import connect
 from homate.presentation.dependencies import get_current_user, get_device_store, get_ws_manager, get_household_service, authenticated_user
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -35,6 +36,18 @@ def commands(identifier: str, request: Request, user=Depends(get_current_user)):
 @router.get("/devices", response_model=list[Device])
 def devices(store=Depends(get_device_store), user=Depends(get_current_user)):
     return store.list()
+
+
+@router.get('/device-connectivity')
+def device_connectivity(request: Request, user=Depends(get_current_user)):
+    with connect(request.app.state.database_url) as conn:
+        rows = conn.execute('''SELECT c.device_id, c.adapter FROM device_connections c
+            JOIN devices d ON d.id=c.device_id WHERE d.home_id=%s''', (user['home_id'],)).fetchall()
+    transport = request.app.state.mqtt_transport
+    return {row['device_id']: {'adapter': row['adapter'], **(
+        transport.connectivity(row['device_id']) if row['adapter'] == 'mqtt' and transport else
+        {'status': 'online' if row['adapter'] == 'simulator' else 'offline', 'last_seen_at': None}
+    )} for row in rows}
 
 
 @router.get("/devices/{identifier}", response_model=Device)

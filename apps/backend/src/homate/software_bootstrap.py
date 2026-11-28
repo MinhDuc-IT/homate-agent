@@ -56,6 +56,7 @@ def create_app(database_url=None, *, start_workers=True):
         transport = MqttTransport(configuration.mqtt_host, configuration.mqtt_port,
             initial_devices, configuration.mqtt_command_timeout_seconds) if configuration.mqtt_host else None
         gateway = DeviceGateway(commands, {'simulator': SimulatorAdapter(), **({'mqtt': transport} if transport else {})})
+        app.state.mqtt_transport = transport
 
         def dispatch(device):
             reported = gateway.execute(device)
@@ -125,7 +126,13 @@ def create_app(database_url=None, *, start_workers=True):
 
     @app.exception_handler(DeviceTransportError)
     async def transport_error(request: Request, error):
-        return JSONResponse(status_code=503, content={'detail': 'Thiết bị chưa thực hiện được lệnh. Bạn thử lại nhé.'})
+        message = {
+            'device_offline': 'Thiết bị đang mất kết nối. Bạn kiểm tra nguồn điện và mạng nhé.',
+            'mqtt_unavailable': 'Kết nối đến thiết bị chưa sẵn sàng. Bạn thử lại sau nhé.',
+            'mqtt_disconnected': 'Kết nối đến thiết bị bị gián đoạn. Bạn kiểm tra trạng thái trước khi thử lại nhé.',
+            'mqtt_timeout': 'Thiết bị chưa phản hồi. Bạn kiểm tra kết nối và trạng thái trước khi thử lại nhé.',
+        }.get(str(error), 'Thiết bị chưa thực hiện được lệnh. Bạn thử lại nhé.')
+        return JSONResponse(status_code=503, content={'detail': message})
 
     @app.get("/health")
     def health():

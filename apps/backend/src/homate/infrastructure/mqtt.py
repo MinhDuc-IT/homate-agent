@@ -38,9 +38,19 @@ def validated_report(device, payload):
     for key, value in state.items():
         if isinstance(value, float) and not math.isfinite(value):
             raise ValueError('invalid_number')
-        if key not in controls:
+        if key in controls:
+            DeviceStore._coerce_and_validate(controls[key], value)
+        elif key == 'locked' and any(control.type == 'action' and control.key in {'lock', 'unlock'} for control in device.controls):
+            if type(value) is not bool:
+                raise ValueError('invalid_lock_state')
+        elif type(value) is not type(device.state[key]) or value != device.state[key]:
+            # A catalog may include read-only fields without a control (e.g.
+            # ac-bed fan). Preserve known metadata rather than accepting writes.
             raise ValueError('unsupported_report_key')
-        DeviceStore._coerce_and_validate(controls[key], value)
+    normalized = device.model_copy(deep=True, update={'state': dict(state)})
+    DeviceStore._synchronize_position_state(normalized, set(state))
+    if normalized.state != state:
+        raise ValueError('inconsistent_position_state')
     return payload
 
 
@@ -53,6 +63,7 @@ class MqttTransport:
         self.lock = threading.RLock()
         self.pending = {}
         self.latest = {}
+        self.presence = {}
         self.retired_boots = {identifier: set() for identifier in self.devices}
         self.reports = queue.Queue(maxsize=256)
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='homate-backend-' + uuid4().hex[:12])
@@ -75,7 +86,7 @@ class MqttTransport:
     def _connect(self, client, userdata, flags, reason, properties):
         if reason.is_failure:
             return
-        topics = [(f'homate/devices/{identifier}/{suffix}', 1) for identifier in self.devices for suffix in ('state', 'ack')]
+        topics = [('homate/availability/+', 1)] + [(f'homate/devices/{identifier}/{suffix}', 1) for identifier in self.devices for suffix in ('state', 'ack')]
         if topics:
             client.subscribe(topics)
 
@@ -103,11 +114,42 @@ class MqttTransport:
         with self.lock:
             return self.latest.get(report['device_id']) == (report['boot_id'], report['revision'])
 
+    def connectivity(self, identifier):
+        with self.lock:
+            entry = self.presence.get(identifier)
+            if not self.ready.is_set():
+                status = 'offline'
+            elif entry is None:
+                status = 'unknown'
+            else:
+                status = 'online' if entry['online'] and time.time() - entry['seen'] < 35 else 'offline'
+            return {'status': status, 'last_seen_at': entry['seen'] if entry else None}
+
     def _message(self, client, userdata, message):
         if len(message.payload) > 8192:
             return
         try:
             parts = message.topic.split('/')
+            if len(parts) == 3 and parts[:2] == ['homate', 'availability']:
+                payload = json.loads(message.payload)
+                if type(payload.get('online')) is not bool or not isinstance(payload.get('device_ids'), list):
+                    return
+                stamp = payload.get('sent_at')
+                if payload['online'] and (type(stamp) not in (float, int) or not math.isfinite(stamp) or stamp > time.time() + 5):
+                    return
+                with self.lock:
+                    for identifier in payload['device_ids']:
+                        if isinstance(identifier, str) and identifier in self.devices:
+                            previous = self.presence.get(identifier)
+                            if payload['online'] and previous and previous['seen'] is not None and stamp < previous['seen']:
+                                continue
+                            self.presence[identifier] = {'online': payload['online'], 'seen': stamp if payload['online'] else previous['seen'] if previous else None}
+                            if not payload['online'] or time.time() - stamp >= 35:
+                                for pending in self.pending.values():
+                                    if pending.device.id == identifier:
+                                        pending.error = 'device_offline'
+                                        pending.event.set()
+                return
             if len(parts) != 4 or parts[:2] != ['homate', 'devices'] or parts[2] not in self.devices:
                 return
             payload = json.loads(message.payload)
@@ -146,6 +188,8 @@ class MqttTransport:
             raise DeviceTransportError('mqtt_device_not_configured')
         if not self.ready.wait(self.timeout):
             raise DeviceTransportError('mqtt_unavailable')
+        if self.connectivity(desired.id)['status'] == 'offline':
+            raise DeviceTransportError('device_offline')
         identifier = settings['_command_id']
         item = Pending(desired)
         with self.lock:

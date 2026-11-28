@@ -8,6 +8,24 @@ from homate.infrastructure.postgres.device_gateway import PostgresCommandReposit
 from test_software import client, admin
 
 
+def test_connectivity_is_authenticated_and_uses_database_adapter(client, admin):
+    from types import SimpleNamespace
+    assert client.get('/api/dashboard/device-connectivity').status_code == 401
+    result = client.get('/api/dashboard/device-connectivity', headers=admin).json()
+    assert result['light-living'] == {'adapter': 'simulator', 'status': 'online', 'last_seen_at': None}
+    original = client.app.state.mqtt_transport
+    try:
+        with connect(client.app.state.database_url) as conn:
+            conn.execute("UPDATE device_connections SET adapter='mqtt' WHERE device_id='light-living'")
+        client.app.state.mqtt_transport = SimpleNamespace(connectivity=lambda identifier: {'status': 'offline', 'last_seen_at': 100})
+        result = client.get('/api/dashboard/device-connectivity', headers=admin).json()
+        assert result['light-living'] == {'adapter': 'mqtt', 'status': 'offline', 'last_seen_at': 100}
+    finally:
+        client.app.state.mqtt_transport = original
+        with connect(client.app.state.database_url) as conn:
+            conn.execute("UPDATE device_connections SET adapter='simulator' WHERE device_id='light-living'")
+
+
 def test_manual_command_is_acknowledged_and_persisted_atomically(client, admin):
     response = client.post('/api/dashboard/devices/light-living/actions', headers=admin, json={'key': 'power', 'value': True})
     assert response.status_code == 200
