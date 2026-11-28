@@ -67,4 +67,4 @@ Cuộn chuột hoặc dùng nút **+ / −** để phóng to, thu nhỏ. Ở to�
 
 ## MQTT giả lập độc lập
 
-Trong Compose, container `device-simulator` có thể thực thi lệnh cho đèn phòng khách 1 qua broker `mqtt` khi adapter của đèn trong DB là `mqtt`. Unity vẫn chỉ nhận trạng thái backend đã báo cáo. Công tắc vật lý giả lập phát MQTT state để cập nhật backend và mô hình; khi adapter là `simulator`, báo cáo MQTT của đèn bị bỏ qua. Xem [hướng dẫn và kịch bản MQTT](mqtt-simulation.md).
+Trong Compose, container `device-simulator` hỗ trợ đủ 37 thiết bị qua broker `mqtt`, với profile kiểm tra trạng thái cho từng loại. Chọn adapter `mqtt` trong DB để thực thi qua MQTT; chọn `simulator` để dùng mô phỏng nội bộ. Unity vẫn chỉ nhận trạng thái backend đã báo cáo và chỉ hiển thị hiệu ứng cho các object đã được liên kết. Công tắc vật lý giả lập phát MQTT state để cập nhật backend và mô hình; khi adapter là `simulator`, báo cáo MQTT của thiết bị đó bị bỏ qua. Xem [hướng dẫn và kịch bản MQTT](mqtt-simulation.md).
