@@ -1,5 +1,6 @@
 """Versioned dialogue storage and fail-stop plan execution contracts."""
 from typing import Protocol
+from homate.modules.home.application.gateway import DeviceTransportError
 
 
 class WorkflowConflict(ValueError):
@@ -49,6 +50,12 @@ class AgentWorkflowService:
             self.repository.start_step(plan_id, step['ordinal'])
             try:
                 result = execute(step['tool'], step['prepared'])
+            except DeviceTransportError as error:
+                message = ('Thiết bị đang mất kết nối. Bạn kiểm tra nguồn điện và mạng nhé.'
+                    if str(error) in {'device_offline', 'mqtt_unavailable', 'mqtt_disconnected'} else
+                    'Thiết bị chưa phản hồi hoặc chưa thực hiện được lệnh. Bạn kiểm tra trạng thái trước khi thử lại nhé.')
+                self.repository.finish_step(plan_id, step['ordinal'], 'failed', {'message': message})
+                return self.repository.finish_plan(plan_id, 'failed', {'message': message})
             except Exception:
                 self.repository.finish_step(plan_id, step['ordinal'], 'failed', {
                     'message': 'Bước thất bại; có thể đã có tác động. Kiểm tra trạng thái thực tế trước khi thử lại.'})
