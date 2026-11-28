@@ -1,3 +1,4 @@
+import { DeviceConnectivity } from '@/components/homemind/DeviceConnectivity'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { PowerIcon, StarIcon } from '@/assets/icons/HomemateIcons'
 import {
@@ -312,7 +313,7 @@ export function DeviceScreen() {
                           active ? 'text-[#22C55E]' : 'text-[#718076]'
                         }`}
                       >
-                        {formatDeviceStatus(device)}
+                        {formatDeviceStatus(device)}<DeviceConnectivity deviceId={device.id} />
                       </p>
                     </button>
                   )
@@ -366,7 +367,7 @@ export function DeviceScreen() {
                                 active ? 'text-[#22C55E]' : 'text-[#88968E]'
                               }`}
                             >
-                              {formatDeviceStatus(device)}
+                              {formatDeviceStatus(device)}<DeviceConnectivity deviceId={device.id} />
                             </p>
                             <p className="text-[8px] text-[#88968E]">
                               {currentPowerW.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} W · Hôm nay {energyKwh.toFixed(2)} kWh
@@ -419,6 +420,7 @@ export function DeviceScreen() {
                       <h3 className="truncate font-display text-xs font-bold text-[#1C2721]">
                         {selectedDevice.name}
                       </h3>
+                      <DeviceConnectivity deviceId={selectedDevice.id} />
                       <p className="text-[10px] text-[#718076]">
                         {roomLabelById[selectedDevice.room] ??
                           selectedDevice.room}

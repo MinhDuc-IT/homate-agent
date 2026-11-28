@@ -1,3 +1,4 @@
+import { DeviceConnectivity } from '@/components/homemind/DeviceConnectivity'
 import { useState } from 'react'
 import { DeviceControlList } from './DeviceControlList'
 import { useDevices } from '@/context/DevicesContext'
@@ -13,7 +14,7 @@ export function SimulationDevicePanel({ device, onClose, onApplied }: { device: 
   }
   return <aside aria-label="Điều khiển thiết bị 3D" className="max-h-72 shrink-0 overflow-y-auto border-t border-[#DCE6DF] bg-white p-4 md:max-h-none md:w-72 md:border-l md:border-t-0">
     <div className="mb-2 flex items-start justify-between gap-3">
-      <h2 className="font-semibold text-[#1E4D38]">{device.name}</h2>
+      <h2 className="font-semibold text-[#1E4D38]">{device.name}<DeviceConnectivity deviceId={device.id} /></h2>
       <button type="button" aria-label="Đóng điều khiển thiết bị" onClick={onClose} className="rounded px-2 text-xl text-[#66746A]">×</button>
     </div>
     <p className="mb-4 text-sm text-[#66746A]" aria-live="polite">{formatDeviceStatus(device)}</p>

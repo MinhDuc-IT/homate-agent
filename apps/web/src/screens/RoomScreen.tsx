@@ -1,3 +1,4 @@
+import { DeviceConnectivity } from '@/components/homemind/DeviceConnectivity'
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -273,7 +274,7 @@ export function RoomScreen() {
                           {device.name}
                         </p>
                         <p className="truncate text-[9px] text-[#718076]">
-                          {selectedRoom?.label} · {formatDeviceStatus(device)}
+                          {selectedRoom?.label} · {formatDeviceStatus(device)}<DeviceConnectivity deviceId={device.id} />
                         </p>
                       </div>
                     </div>

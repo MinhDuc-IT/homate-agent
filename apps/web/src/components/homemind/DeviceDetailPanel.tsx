@@ -1,3 +1,4 @@
+import { DeviceConnectivity } from '@/components/homemind/DeviceConnectivity'
 import type { ReactNode } from 'react'
 import {
   Modal,
@@ -48,7 +49,7 @@ export function DeviceDetailPanel({
             {icon}
           </span>
           <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold text-text-primary">{device.name}</h2>
+            <h2 className="truncate text-base font-semibold text-text-primary">{device.name}<DeviceConnectivity deviceId={device.id} /></h2>
             <p className="text-xs text-text-muted">{roomLabel}</p>
           </div>
         </div>

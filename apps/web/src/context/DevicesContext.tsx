@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { applyDeviceAction, fetchDevices } from "@/api/devices";
+import { API_DASHBOARD } from '@/config/api';
+import { apiFetch, readJson } from '@/api/http';
 import { getAccessToken } from "@/api/http";
 import { respondAmbientSuggestion as sendAmbientSuggestionDecision } from "@/api/ambient";
 import { devicesWsUrl } from "@/config/api";
@@ -41,7 +43,10 @@ type WsScheduleExecutedMessage = {
 
 type WsMessage = WsSnapshotMessage | WsDeviceUpdatedMessage | WsScheduleExecutedMessage | AmbientSuggestion;
 
+export type Connectivity = Record<string, { adapter: string; status: 'online' | 'offline' | 'unknown'; last_seen_at: number | null }>;
+
 type DevicesContextValue = {
+  connectivity: Connectivity;
   devices: Device[];
   loading: boolean;
   error: string | null;
@@ -96,6 +101,7 @@ function abandonSocket(ws: WebSocket | null) {
 export function DevicesProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
   const { session, authReady } = useSession();
+  const [connectivity, setConnectivity] = useState<Connectivity>({});
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +109,25 @@ export function DevicesProvider({ children }: { children: ReactNode }) {
   const [ambientSuggestions, setAmbientSuggestions] = useState<AmbientSuggestion[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!authReady || !session) return;
+    let cancelled = false;
+    async function poll() {
+      try {
+        const response = await apiFetch(`${API_DASHBOARD}/device-connectivity`);
+        const result = await readJson<Connectivity>(response);
+        if (!cancelled) setConnectivity(result);
+      } catch {
+        if (!cancelled) setConnectivity(previous => Object.fromEntries(
+          Object.entries(previous).map(([id, value]) => [id, { ...value, status: 'unknown' as const }])
+        ));
+      }
+    }
+    void poll();
+    const timer = window.setInterval(() => void poll(), 3000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [authReady, session]);
 
   const dismissAmbientSuggestion = useCallback((requestId: string) => {
     setAmbientSuggestions((prev) => prev.filter((s) => s.request_id !== requestId));
@@ -279,6 +304,7 @@ export function DevicesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      connectivity,
       devices,
       loading,
       error,
@@ -290,6 +316,7 @@ export function DevicesProvider({ children }: { children: ReactNode }) {
       respondAmbientSuggestion,
     }),
     [
+      connectivity,
       devices,
       loading,
       error,
