@@ -14,7 +14,8 @@ services:
     build: ./apps/device-simulator
     environment:
       MQTT_HOST: mqtt
-      MQTT_SIMULATED_DEVICE_IDS: ${MQTT_SIMULATED_DEVICE_IDS:-light-living}
+      MQTT_SIMULATED_DEVICE_IDS: ${MQTT_SIMULATED_DEVICE_IDS:-all}
+      MQTT_SIMULATOR_ID: ${MQTT_SIMULATOR_ID:-device-simulator}
     volumes: ["mqtt_device_data:/data"]
     ports: ["127.0.0.1:${DEVICE_SIMULATOR_PORT:-9040}:9040"]
     healthcheck:
