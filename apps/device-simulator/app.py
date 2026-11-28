@@ -1,4 +1,4 @@
-"""Standalone virtual MQTT lights. No backend, database or agent dependency."""
+"""Standalone MQTT home devices. No backend, database or agent dependency."""
 import json
 import math
 import os
@@ -10,17 +10,21 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from uuid import UUID, uuid4
 
 import paho.mqtt.client as mqtt
+from catalog import Catalog
 
 
 class Devices:
     def __init__(self, path, identifiers, publish):
         self.path, self.publish = Path(path), publish
+        self.catalog = Catalog()
+        if not identifiers or any(identifier not in self.catalog.devices for identifier in identifiers):
+            raise ValueError('Unknown device ID')
         self.lock = threading.RLock()
         self.modes = {identifier: {'mode': 'normal', 'delay_ms': 0} for identifier in identifiers}
         self.data = json.loads(self.path.read_text()) if self.path.exists() else {'boot_id': str(uuid4()), 'devices': {}, 'receipts': {}}
-        templates = json.loads(Path(__file__).with_name('devices.json').read_text())
         for identifier in identifiers:
-            self.data['devices'].setdefault(identifier, {'state': templates[identifier], 'revision': 0})
+            self.data['devices'].setdefault(identifier, {'state': self.catalog.devices[identifier]['state'], 'revision': 0})
+            self.validated(identifier, self.data['devices'][identifier]['state'])
         self.save()
 
     def save(self):
@@ -36,20 +40,11 @@ class Devices:
         self.publish(f'homate/devices/{identifier}/state', self.report(identifier), True)
 
     def validated(self, identifier, state):
-        previous = self.data['devices'][identifier]['state']
-        if not isinstance(state, dict) or state.keys() != previous.keys() or type(state.get('power')) is not bool:
-            raise ValueError('invalid_state')
-        if 'brightness' in state:
-            value = state['brightness']
-            if type(value) not in (int, float) or not math.isfinite(value) or not 1 <= value <= 100:
-                raise ValueError('invalid_brightness')
-        return state
+        return self.catalog.validate(identifier, state)
 
     def physical(self, identifier, patch):
         with self.lock:
-            if not isinstance(patch, dict) or not patch.keys() <= self.data['devices'][identifier]['state'].keys():
-                raise ValueError('invalid_state')
-            state = self.validated(identifier, {**self.data['devices'][identifier]['state'], **patch})
+            state = self.catalog.patch(identifier, self.data['devices'][identifier]['state'], patch)
             self.data['devices'][identifier]['state'] = state
             self.data['devices'][identifier]['revision'] += 1
             self.save()
@@ -76,7 +71,11 @@ class Devices:
                 elif mode['mode'] == 'reject':
                     reply = {'device_id': identifier, 'command_id': command_id, 'status': 'rejected'}
                 else:
-                    state = self.validated(identifier, packet['desired_state'])
+                    try:
+                        state = self.validated(identifier, packet['desired_state'])
+                    except (KeyError, ValueError, TypeError):
+                        self.publish(f'homate/devices/{identifier}/ack', {'device_id': identifier, 'command_id': command_id, 'status': 'invalid_state'}, False)
+                        return
                     self.data['devices'][identifier]['state'] = state
                     self.data['devices'][identifier]['revision'] += 1
                     reply = {**self.report(identifier), 'command_id': command_id, 'status': 'succeeded'}
@@ -91,13 +90,15 @@ class Devices:
 
 
 def main():
-    identifiers = [identifier.strip() for identifier in os.environ.get('MQTT_SIMULATED_DEVICE_IDS', 'light-living').split(',') if identifier.strip()]
-    if not identifiers or any(not identifier.startswith('light-') or not all(c.isalnum() or c == '-' for c in identifier) for identifier in identifiers):
-        raise ValueError('Configure light IDs only')
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='homate-mqtt-device-simulator')
-    client.will_set('homate/simulator/availability', 'offline', qos=1, retain=True)
+    identifiers = Catalog().select(os.environ.get('MQTT_SIMULATED_DEVICE_IDS', 'all'))
+    node_id = os.environ.get('MQTT_SIMULATOR_ID', 'device-simulator')
+    if not node_id or len(node_id) > 64 or not all(c.isascii() and (c.isalnum() or c in '-_') for c in node_id):
+        raise ValueError('Invalid MQTT_SIMULATOR_ID')
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='homate-' + node_id)
+    availability_topic = 'homate/availability/' + node_id
+    client.will_set(availability_topic, json.dumps({'device_ids': identifiers, 'online': False}), qos=1, retain=True)
     client.reconnect_delay_set(1, 5)
-    inbox = queue.Queue(maxsize=64)
+    inboxes = {identifier: queue.Queue(maxsize=16) for identifier in identifiers}
     devices = Devices(os.environ.get('STATE_FILE', '/data/devices.json'), identifiers,
         lambda topic, payload, retain: client.publish(topic, json.dumps(payload), qos=1, retain=retain))
 
@@ -105,24 +106,33 @@ def main():
         if reason.is_failure:
             return
         client.subscribe([(f'homate/devices/{identifier}/set', 1) for identifier in identifiers])
-        client.publish('homate/simulator/availability', 'online', qos=1, retain=True)
+        announce()
         with devices.lock:
             for identifier in identifiers:
                 devices.emit(identifier)
+
+    def announce():
+        client.publish(availability_topic, json.dumps({'device_ids': identifiers, 'online': True, 'sent_at': time.time()}), qos=1, retain=True)
+
+    def heartbeat():
+        while True:
+            if client.is_connected():
+                announce()
+            time.sleep(10)
 
     def message(client, userdata, msg):
         if msg.retain or len(msg.payload) > 8192:
             return
         try:
             identifier = msg.topic.split('/')[2]
-            if identifier in devices.modes:
-                inbox.put_nowait((identifier, json.loads(msg.payload)))
+            if identifier in inboxes and msg.topic == f'homate/devices/{identifier}/set':
+                inboxes[identifier].put_nowait(json.loads(msg.payload))
         except (ValueError, IndexError, queue.Full):
             pass
 
-    def work():
+    def work(identifier):
         while True:
-            identifier, packet = inbox.get()
+            packet = inboxes[identifier].get()
             devices.command(identifier, packet)
 
     class HTTP(BaseHTTPRequestHandler):
@@ -163,12 +173,15 @@ def main():
                 self.respond(400, {'error': 'invalid_request'})
 
     client.on_connect, client.on_message = connected, message
-    threading.Thread(target=work, daemon=True).start()
+    for identifier in identifiers:
+        threading.Thread(target=work, args=(identifier,), daemon=True).start()
+    threading.Thread(target=heartbeat, daemon=True).start()
     client.connect_async(os.environ.get('MQTT_HOST', 'mqtt'), int(os.environ.get('MQTT_PORT', '1883')), keepalive=15)
     client.loop_start()
     try:
         ThreadingHTTPServer(('0.0.0.0', 9040), HTTP).serve_forever()
     finally:
+        client.publish(availability_topic, json.dumps({'device_ids': identifiers, 'online': False}), qos=1, retain=True).wait_for_publish(timeout=2)
         client.disconnect()
         client.loop_stop()
 

@@ -1,0 +1,214 @@
+{
+  "bulb": {
+    "kind": "bulb",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      },
+      "brightness": {
+        "type": "number",
+        "min": 1.0,
+        "max": 100.0
+      }
+    }
+  },
+  "snowflake": {
+    "kind": "snowflake",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      },
+      "temperature": {
+        "type": "number",
+        "min": 16.0,
+        "max": 30.0
+      },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "cool",
+          "dry",
+          "fan"
+        ]
+      },
+      "fan": {
+        "type": "string",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ]
+      }
+    }
+  },
+  "tv": {
+    "kind": "tv",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      }
+    }
+  },
+  "speaker": {
+    "kind": "speaker",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      },
+      "volume": {
+        "type": "number",
+        "min": 0.0,
+        "max": 100.0
+      }
+    }
+  },
+  "flame": {
+    "kind": "flame",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      },
+      "temperature": {
+        "type": "number",
+        "min": 16.0,
+        "max": 30.0
+      }
+    }
+  },
+  "lock": {
+    "kind": "lock",
+    "fields": {
+      "locked": {
+        "type": "boolean"
+      }
+    }
+  },
+  "camera": {
+    "kind": "camera",
+    "fields": {
+      "recording": {
+        "type": "boolean"
+      }
+    }
+  },
+  "bulb_2": {
+    "kind": "bulb",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      }
+    }
+  },
+  "snowflake_2": {
+    "kind": "snowflake",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      },
+      "temperature": {
+        "type": "number",
+        "min": 16.0,
+        "max": 30.0
+      },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "cool",
+          "dry",
+          "fan"
+        ]
+      },
+      "fan": {
+        "type": "string",
+        "const": "low"
+      }
+    }
+  },
+  "curtain": {
+    "kind": "curtain",
+    "fields": {
+      "preset": {
+        "type": "string",
+        "enum": [
+          "closed",
+          "ajar",
+          "open"
+        ]
+      },
+      "position": {
+        "type": "number",
+        "min": 0.0,
+        "max": 100.0
+      }
+    }
+  },
+  "fan": {
+    "kind": "fan",
+    "fields": {
+      "speed": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    }
+  },
+  "plug": {
+    "kind": "plug",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      }
+    }
+  },
+  "droplet": {
+    "kind": "droplet",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      },
+      "temperature": {
+        "type": "number",
+        "min": 35.0,
+        "max": 55.0
+      }
+    }
+  },
+  "fan_2": {
+    "kind": "fan",
+    "fields": {
+      "speed": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      }
+    }
+  },
+  "snowflake_3": {
+    "kind": "snowflake",
+    "fields": {
+      "power": {
+        "type": "boolean"
+      },
+      "temperature": {
+        "type": "number",
+        "min": 16.0,
+        "max": 30.0
+      },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "cool",
+          "dry",
+          "fan"
+        ]
+      }
+    }
+  }
+}

@@ -1,15 +1,246 @@
 {
-  "light-living": {"power": false, "brightness": 60},
-  "light-balcony": {"power": false},
-  "light-living-3": {"power": false},
-  "light-office": {"power": false, "brightness": 80},
-  "light-living-5": {"power": false, "brightness": 60},
-  "light-living-6": {"power": false, "brightness": 60},
-  "light-living-7": {"power": false, "brightness": 60},
-  "light-living-8": {"power": false, "brightness": 60},
-  "light-bed": {"power": false},
-  "light-bed-2": {"power": false},
-  "light-kitchen": {"power": false},
-  "light-bath": {"power": false},
-  "light-bath-mirror": {"power": false}
+  "light-living": {
+    "profile": "bulb",
+    "state": {
+      "power": false,
+      "brightness": 60
+    }
+  },
+  "ac-living": {
+    "profile": "snowflake",
+    "state": {
+      "power": false,
+      "temperature": 26,
+      "mode": "cool",
+      "fan": "medium"
+    }
+  },
+  "tv-living": {
+    "profile": "tv",
+    "state": {
+      "power": false
+    }
+  },
+  "speaker-living": {
+    "profile": "speaker",
+    "state": {
+      "power": false,
+      "volume": 35
+    }
+  },
+  "heater-living": {
+    "profile": "flame",
+    "state": {
+      "power": false,
+      "temperature": 24
+    }
+  },
+  "door": {
+    "profile": "lock",
+    "state": {
+      "locked": true
+    }
+  },
+  "cam-entrance": {
+    "profile": "camera",
+    "state": {
+      "recording": false
+    }
+  },
+  "light-bed": {
+    "profile": "bulb_2",
+    "state": {
+      "power": false
+    }
+  },
+  "ac-bed": {
+    "profile": "snowflake_2",
+    "state": {
+      "power": false,
+      "temperature": 24,
+      "mode": "cool",
+      "fan": "low"
+    }
+  },
+  "curtain": {
+    "profile": "curtain",
+    "state": {
+      "preset": "closed",
+      "position": 0
+    }
+  },
+  "fan-bed": {
+    "profile": "fan",
+    "state": {
+      "speed": 0
+    }
+  },
+  "light-kitchen": {
+    "profile": "bulb_2",
+    "state": {
+      "power": false
+    }
+  },
+  "plug-kitchen": {
+    "profile": "plug",
+    "state": {
+      "power": false
+    }
+  },
+  "fan-kitchen": {
+    "profile": "fan",
+    "state": {
+      "speed": 0
+    }
+  },
+  "light-bath": {
+    "profile": "bulb_2",
+    "state": {
+      "power": false
+    }
+  },
+  "heater-bath": {
+    "profile": "droplet",
+    "state": {
+      "power": false,
+      "temperature": 42
+    }
+  },
+  "fan-bath": {
+    "profile": "fan_2",
+    "state": {
+      "speed": 0
+    }
+  },
+  "light-office": {
+    "profile": "bulb",
+    "state": {
+      "power": false,
+      "brightness": 80
+    }
+  },
+  "ac-office": {
+    "profile": "snowflake_3",
+    "state": {
+      "power": false,
+      "temperature": 25,
+      "mode": "cool"
+    }
+  },
+  "plug-office": {
+    "profile": "plug",
+    "state": {
+      "power": false
+    }
+  },
+  "light-balcony": {
+    "profile": "bulb_2",
+    "state": {
+      "power": false
+    }
+  },
+  "cam-balcony": {
+    "profile": "camera",
+    "state": {
+      "recording": false
+    }
+  },
+  "light-living-3": {
+    "profile": "bulb_2",
+    "state": {
+      "power": false
+    }
+  },
+  "light-living-5": {
+    "profile": "bulb",
+    "state": {
+      "power": false,
+      "brightness": 60
+    }
+  },
+  "light-living-6": {
+    "profile": "bulb",
+    "state": {
+      "power": false,
+      "brightness": 60
+    }
+  },
+  "light-living-7": {
+    "profile": "bulb",
+    "state": {
+      "power": false,
+      "brightness": 60
+    }
+  },
+  "light-living-8": {
+    "profile": "bulb",
+    "state": {
+      "power": false,
+      "brightness": 60
+    }
+  },
+  "light-bed-2": {
+    "profile": "bulb_2",
+    "state": {
+      "power": false
+    }
+  },
+  "light-bath-mirror": {
+    "profile": "bulb_2",
+    "state": {
+      "power": false
+    }
+  },
+  "curtain-bed-roller": {
+    "profile": "curtain",
+    "state": {
+      "preset": "closed",
+      "position": 0
+    }
+  },
+  "curtain-living": {
+    "profile": "curtain",
+    "state": {
+      "preset": "closed",
+      "position": 0
+    }
+  },
+  "curtain-kitchen": {
+    "profile": "curtain",
+    "state": {
+      "preset": "closed",
+      "position": 0
+    }
+  },
+  "curtain-bath": {
+    "profile": "curtain",
+    "state": {
+      "preset": "closed",
+      "position": 0
+    }
+  },
+  "cam-living": {
+    "profile": "camera",
+    "state": {
+      "recording": false
+    }
+  },
+  "cam-bed": {
+    "profile": "camera",
+    "state": {
+      "recording": false
+    }
+  },
+  "cam-kitchen": {
+    "profile": "camera",
+    "state": {
+      "recording": false
+    }
+  },
+  "cam-tv": {
+    "profile": "camera",
+    "state": {
+      "recording": false
+    }
+  }
 }
